@@ -104,12 +104,39 @@ function Admin({back}){
  const [tab,setTab]=useState('Dashboard'),[rows,setRows]=useState([]),[loading,setLoading]=useState(false),[notice,setNotice]=useState('');
  const [brands,setBrands]=useState([]),[productsList,setProductsList]=useState([]),[uploading,setUploading]=useState(false);
  const [stats,setStats]=useState({revenue:0,orders:0,inventory:0,net:0});
+ const [inventorySummary,setInventorySummary]=useState([]),[inventoryTotals,setInventoryTotals]=useState({opening:0,received:0,sold:0,out:0,returns:0,adjustments:0,current:0,value:0});
  const nav=[["Dashboard",BarChart3],["Orders",ShoppingBag],["Products",Package],["Brands",ShieldCheck],["Inventory",Boxes],["Production",Settings],["Customers",Users],["Accounting",Wallet],["Reports",BarChart3],["Admin users",Users],["Materials",Boxes],["Coupons",ShoppingBag],["Settings",Settings]];
+ const loadInventoryAccounting=async()=>{
+  if(!supabase)return;
+  const [{data:prods,error:pe},{data:moves,error:me}]=await Promise.all([
+    supabase.from('products').select('id,name,sku,unit_cost,price,active').order('name'),
+    supabase.from('inventory_movements').select('*').order('created_at',{ascending:true})
+  ]);
+  if(pe)throw pe;if(me)throw me;
+  const summary=(prods||[]).map(product=>{
+    let opening=0,received=0,sold=0,out=0,returns=0,adjustments=0,current=0;
+    (moves||[]).filter(m=>m.product_id===product.id).forEach(m=>{
+      const q=Number(m.qty??m.quantity??0);
+      const type=String(m.movement_type||'').toUpperCase();
+      const note=String(m.note||'').toLowerCase();
+      if(type==='OPENING'){opening+=Math.abs(q);current+=Math.abs(q)}
+      else if(type==='IN'||type==='PRODUCTION_IN'){received+=Math.abs(q);current+=Math.abs(q)}
+      else if(type==='RETURN'){returns+=Math.abs(q);current+=Math.abs(q)}
+      else if(type==='SALE'||type==='SOLD'||note.includes('sale')||note.includes('order')){sold+=Math.abs(q);current-=Math.abs(q)}
+      else if(type==='OUT'){out+=Math.abs(q);current-=Math.abs(q)}
+      else if(type==='ADJUST'||type==='ADJUSTMENT'){adjustments+=q;current+=q}
+    });
+    return {...product,opening,received,sold,out,returns,adjustments,current,value:current*Number(product.unit_cost||0)};
+  });
+  const totals=summary.reduce((a,r)=>({opening:a.opening+r.opening,received:a.received+r.received,sold:a.sold+r.sold,out:a.out+r.out,returns:a.returns+r.returns,adjustments:a.adjustments+r.adjustments,current:a.current+r.current,value:a.value+r.value}),{opening:0,received:0,sold:0,out:0,returns:0,adjustments:0,current:0,value:0});
+  setInventorySummary(summary);setInventoryTotals(totals);
+ };
  const load=async()=>{if(!supabase)return;setLoading(true);setNotice('');try{
   const table={Orders:'orders',Products:'products',Brands:'brands',Inventory:'inventory_movements',Production:'production_orders',Customers:'profiles',Accounting:'expenses','Admin users':'profiles',Materials:'materials',Coupons:'coupons'}[tab];
   if(table){let q=supabase.from(table).select('*').order('created_at',{ascending:false}).limit(100);if(tab==='Admin users')q=q.in('role',['staff','admin','super_admin']);const {data,error}=await q;if(error)throw error;setRows(data||[])}
   const [{data:o},{data:im},{data:ex}]=await Promise.all([supabase.from('orders').select('total,status'),supabase.from('inventory_movements').select('quantity,qty,movement_type'),supabase.from('expenses').select('amount')]);
   const paid=(o||[]).filter(x=>['paid','processing','shipped','delivered'].includes(String(x.status).toLowerCase()));const rev=paid.reduce((s,x)=>s+Number(x.total||0),0);const inv=(im||[]).reduce((s,x)=>{const n=Number(x.quantity??x.qty??0);return s+(['out','sale','consume'].includes(String(x.movement_type).toLowerCase())?-Math.abs(n):n)},0);const expenses=(ex||[]).reduce((s,x)=>s+Number(x.amount||0),0);setStats({revenue:rev,orders:(o||[]).length,inventory:inv,net:rev-expenses});
+  if(tab==='Inventory')await loadInventoryAccounting();
  }catch(e){setNotice(e.message)}finally{setLoading(false)}};
  useEffect(()=>{load()},[tab]);
  useEffect(()=>{if(!supabase)return;(async()=>{const [{data:b},{data:p}]=await Promise.all([supabase.from('brands').select('id,name').eq('active',true).order('name'),supabase.from('products').select('id,name,sku').eq('active',true).order('name')]);setBrands(b||[]);setProductsList(p||[])})()},[tab,notice]);
@@ -126,6 +153,25 @@ function Admin({back}){
  }catch(err){setUploading(false);setNotice(err.message)}};
  const createAdmin=async(e)=>{e.preventDefault();const form=e.currentTarget;const f=Object.fromEntries(new FormData(form));const {data,error}=await supabase.functions.invoke('admin-create-user',{body:{email:f.email,full_name:f.full_name,role:f.role}});if(error||!data?.ok){setNotice(data?.error||error?.message||'Unable to create user');return}setNotice(`Administrator created — temporary password: ${data.temporaryPassword}`);form.reset();await load()};
  const updateAdmin=async(id,role,disabled)=>{const {data,error}=await supabase.functions.invoke('admin-update-user',{body:{user_id:id,role,disabled}});setNotice(error?.message||data?.error||'Access updated.');load()};
+ const deleteInventoryMovement=async(movement)=>{
+  if(!movement?.id)return;
+  const type=String(movement.movement_type||'').toUpperCase();
+  const note=String(movement.note||'').toLowerCase();
+  const saleLinked=['SALE','SOLD'].includes(type)||note.includes('sale')||note.includes('order');
+  if(saleLinked){
+    const ok=window.confirm('This movement belongs to a sale/order and cannot be deleted from the audit history. Create a reversing adjustment instead?');
+    if(!ok)return;
+    const {error}=await supabase.from('inventory_movements').insert({product_id:movement.product_id,qty:Math.abs(Number(movement.qty??movement.quantity??0)),movement_type:'ADJUSTMENT',note:`Reversal of sale movement ${movement.id}`});
+    if(error){setNotice(error.message);return}
+    setNotice('Sale history preserved. Reversing adjustment created.');
+  }else{
+    if(!window.confirm('Delete this inventory movement? Stock totals will be recalculated.'))return;
+    const {error}=await supabase.from('inventory_movements').delete().eq('id',movement.id);
+    if(error){setNotice(error.message);return}
+    setNotice('Inventory movement deleted.');
+  }
+  await load();
+ };
  const deleteProduct=async(product)=>{
   if(!product?.id)return;
   const ok=window.confirm(`Delete "${product.name||'this product'}"?\n\nIf it already has sales or production history, KARIA will archive it instead so accounting/history are preserved.`);
@@ -165,7 +211,7 @@ function Admin({back}){
   if(tab==='Dashboard')return <><div className="cards">{cards.map(([a,b,I])=><div key={a}><I/><small>{a}</small><strong>{b}</strong><em>Live from Supabase</em></div>)}</div><div className="adminGrid"><div className="panel"><h2>Inventory movements</h2><p>Sales, production, returns and adjustments remain auditable.</p></div><div className="panel"><h2>Accounting engine</h2><p>Order → payment → sales → tax → fees → COGS → inventory → reports.</p><div className="flow">SALE → INVENTORY → LEDGER → REPORTS</div></div></div></>;
   if(tab==='Brands')return <><form className="adminForm" onSubmit={e=>create(e,'brand')}><h2>New brand</h2><Field name="name" placeholder="Brand name" required/><Field name="description" placeholder="Story / description"/><button>CREATE BRAND</button></form><DataTable rows={rows}/></>;
   if(tab==='Products')return <><form className="adminForm wide productForm" onSubmit={e=>create(e,'product')}><h2>New product</h2><p className="formHelp">Step 1: create the product and publish it to the Shop. Stock starts at 0. Step 2: go to Inventory to enter the real quantity available.</p><Field name="name" placeholder="Product name" required/><Field name="sku" placeholder="SKU" required/><select name="brand_id"><option value="">Select brand (optional)</option>{brands.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select><Field name="price" placeholder="Sale price" type="number" required/><Field name="cost" placeholder="Unit cost" type="number"/><Field name="weight" placeholder="Weight" type="number"/><Field name="low_stock_threshold" placeholder="Low stock alert (default 2)" type="number"/><Field name="materials" placeholder="Materials"/><Field name="dimensions" placeholder="Dimensions"/><textarea name="description" placeholder="Description and story"/><label className="uploadBox"><b>PRODUCT PHOTOS / VIDEO</b><span>Choose one or several images. The first image becomes the main product photo.</span><input name="images" type="file" accept="image/*,video/mp4,video/webm" multiple required/></label><label className="checkLine"><input name="publish_shop" type="checkbox" defaultChecked/> Publish in KARIA Shop</label><label className="checkLine"><input name="featured" type="checkbox"/> Featured product</label><button disabled={uploading}>{uploading?'UPLOADING MEDIA…':'CREATE PRODUCT + UPLOAD MEDIA'}</button></form><DataTable rows={rows} actions={r=><button className="dangerBtn" onClick={()=>deleteProduct(r)}>DELETE</button>}/></>;
-  if(tab==='Inventory')return <><form className="adminForm wide" onSubmit={e=>create(e,'inventory')}><h2>Inventory movement</h2><p className="formHelp">Add physical quantities here after the product has been created. Product creation never adds inventory automatically.</p><select name="product_id" required><option value="">Select product</option>{productsList.map(p=><option key={p.id} value={p.id}>{p.name} · {p.sku}</option>)}</select><Field name="quantity" placeholder="Quantity" type="number" required/><select name="movement_type"><option value="IN">IN</option><option value="OUT">OUT</option><option value="RETURN">RETURN</option><option value="ADJUST">ADJUSTMENT</option><option value="PRODUCTION_IN">PRODUCTION IN</option></select><Field name="note" placeholder="Note"/><button>POST MOVEMENT</button></form><DataTable rows={rows}/></>;
+  if(tab==='Inventory')return <><section className="inventoryHero"><div><small>LIVE INVENTORY CONTROL</small><h2>Inventory accounting</h2><p>Every product keeps a permanent movement history. Opening stock + receipts + returns + adjustments − sales − other outputs = current stock.</p></div><div><small>INVENTORY VALUE AT COST</small><strong>${inventoryTotals.value.toFixed(2)}</strong></div></section><div className="inventoryKpis"><div><span>Opening stock</span><strong>{inventoryTotals.opening}</strong></div><div><span>Received</span><strong>+{inventoryTotals.received}</strong></div><div><span>Sales</span><strong>-{inventoryTotals.sold}</strong></div><div><span>Returns</span><strong>+{inventoryTotals.returns}</strong></div><div><span>Other OUT</span><strong>-{inventoryTotals.out}</strong></div><div className="currentKpi"><span>Current stock</span><strong>{inventoryTotals.current}</strong></div></div><section className="inventorySummary"><div className="inventorySectionTitle"><div><small>PRODUCT LEDGER</small><h3>Inventory by product</h3></div><span>{inventorySummary.length} products</span></div><div className="tableWrap"><table><thead><tr><th>PRODUCT</th><th>SKU</th><th>OPENING</th><th>RECEIVED</th><th>SALES</th><th>RETURNS</th><th>OTHER OUT</th><th>ADJ.</th><th>CURRENT</th><th>VALUE</th></tr></thead><tbody>{inventorySummary.map(r=><tr key={r.id}><td><b>{r.name}</b></td><td>{r.sku||'—'}</td><td>{r.opening}</td><td className="positive">+{r.received}</td><td className="negative">-{r.sold}</td><td className="positive">+{r.returns}</td><td className="negative">-{r.out}</td><td>{r.adjustments}</td><td><span className={r.current<=0?'stockPill zero':'stockPill'}>{r.current}</span></td><td>${r.value.toFixed(2)}</td></tr>)}</tbody></table></div></section><form className="adminForm wide" onSubmit={e=>create(e,'inventory')}><h2>Add inventory movement</h2><p className="formHelp">Use OPENING STOCK only when entering the first physical count of a product. Use IN for later receipts. Sales will be recorded automatically by the order system.</p><select name="product_id" required><option value="">Select product</option>{productsList.map(p=><option key={p.id} value={p.id}>{p.name} · {p.sku}</option>)}</select><Field name="quantity" placeholder="Quantity" type="number" required/><select name="movement_type"><option value="OPENING">OPENING STOCK</option><option value="IN">IN / RECEIVED</option><option value="OUT">OUT</option><option value="RETURN">RETURN</option><option value="ADJUST">ADJUSTMENT</option><option value="PRODUCTION_IN">PRODUCTION IN</option></select><Field name="note" placeholder="Reason / reference"/><button>POST MOVEMENT</button></form><div className="inventorySectionTitle movementHead"><div><small>AUDIT TRAIL</small><h3>Movement history</h3></div></div><DataTable rows={rows} actions={r=><button className="dangerBtn" onClick={()=>deleteInventoryMovement(r)}>DELETE / REVERSE</button>}/></>;
   if(tab==='Production')return <><form className="adminForm wide" onSubmit={e=>create(e,'production')}><h2>Production order</h2><select name="product_id" required><option value="">Select product</option>{productsList.map(p=><option key={p.id} value={p.id}>{p.name} · {p.sku}</option>)}</select><Field name="quantity" placeholder="Quantity to make" type="number" required/><Field name="notes" placeholder="Materials / artisan notes"/><button>CREATE PRODUCTION ORDER</button></form><DataTable rows={rows}/></>;
   if(tab==='Accounting')return <><form className="adminForm wide" onSubmit={e=>create(e,'expense')}><h2>Record expense</h2><Field name="description" placeholder="Description" required/><Field name="amount" placeholder="Amount" type="number" required/><Field name="category" placeholder="Category"/><Field name="expense_date" type="date"/><button>POST EXPENSE</button></form><DataTable rows={rows}/></>;
   if(tab==='Reports')return <div className="reportGrid">{cards.map(([a,b])=><div className="panel" key={a}><small>{a}</small><h2>{b}</h2></div>)}<div className="panel"><h2>Ownership</h2><p>Partner A 50% · Partner B 50%. Capital contributions and distributions are tracked independently from ownership.</p></div></div>;
