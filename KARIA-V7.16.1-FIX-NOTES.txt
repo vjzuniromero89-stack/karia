@@ -1,0 +1,22 @@
+KARIA V7.16.1 — CATEGORY SAVE FIX
+
+ROOT CAUSE:
+The original categories table only had id, name and slug.
+V7.16 introduced activate/deactivate management and therefore expected categories.active.
+The database had not yet been migrated.
+
+FIX:
+1. Added KARIA-V7.16.1-CATEGORIES-MIGRATION.sql.
+2. Migration adds categories.active with default true.
+3. Enables RLS on categories.
+4. Public/authenticated users can read active categories.
+5. Staff/Admin/Super Admin can create, edit, activate/deactivate and delete categories.
+6. Frontend category loading is tolerant and filters inactive categories for Product dropdown.
+
+INSTALL:
+A) Deploy this ZIP.
+B) Supabase > SQL Editor > New query.
+C) Paste/run KARIA-V7.16.1-CATEGORIES-MIGRATION.sql once.
+D) Return to Admin > Categories and create a category.
+
+No existing category/product data is deleted.
