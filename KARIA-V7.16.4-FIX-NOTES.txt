@@ -1,0 +1,13 @@
+KARIA V7.16.4 — RELIABLE PRODUCT DELETE
+
+The browser no longer tries to manually delete several related tables under RLS.
+Admin now calls one protected Supabase RPC: admin_delete_product.
+
+Behavior:
+- Product with order/sales history -> archive (active=false), preserving accounting.
+- Product without sales -> permanently deletes old inventory, obsolete production rows,
+  variants, media DB rows, optional product_materials links, then product.
+- RPC is SECURITY DEFINER but checks public.is_admin() before doing anything.
+- UI shows the actual database error if deletion fails.
+
+Run KARIA-V7.16.4-PRODUCT-DELETE-RPC.sql in Supabase before testing.

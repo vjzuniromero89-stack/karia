@@ -353,33 +353,18 @@ function Admin({back}){
  };
  const deleteProduct=async(product)=>{
   if(!product?.id)return;
-  if(!window.confirm(`Delete "${product.name||'this product'}"?\n\nProducts with sales history will be archived so order/accounting history stays intact. Products without sales history will be permanently deleted.`))return;
-  setNotice('');
+  if(!window.confirm(`Delete "${product.name||'this product'}"?\n\nIf it has sales history, KARIA will archive it to preserve accounting. Otherwise it will be permanently deleted.`))return;
+  setNotice('Deleting product…');
   try{
-    const {count:orderCount,error:oe}=await supabase.from('order_items').select('id',{count:'exact',head:true}).eq('product_id',product.id);
-    if(oe)throw oe;
-    if((orderCount||0)>0){
-      const {data:archived,error}=await supabase.from('products').update({active:false}).eq('id',product.id).select('id');
-      if(error)throw error;
-      if(!archived?.length)throw new Error('The product could not be archived. Check Admin product permissions.');
-      setNotice('Product archived. It has sales history, so KARIA preserved it for orders/accounting and removed it from the active catalog.');
-    }else{
-      const [{data:media,error:me},{error:ie}]=await Promise.all([
-        supabase.from('product_media').select('id,url').eq('product_id',product.id),
-        supabase.from('inventory_movements').delete().eq('product_id',product.id)
-      ]);
-      if(me)throw me;if(ie)throw ie;
-      const {error:mde}=await supabase.from('product_media').delete().eq('product_id',product.id);
-      if(mde)throw mde;
-      const {data:deleted,error:de}=await supabase.from('products').delete().eq('id',product.id).select('id');
-      if(de)throw de;
-      if(!deleted?.length)throw new Error('The product was not deleted. Check Admin product delete permissions.');
-      const paths=(media||[]).map(m=>{const marker='/storage/v1/object/public/product-media/';const i=String(m.url||'').indexOf(marker);return i>=0?decodeURIComponent(String(m.url).slice(i+marker.length)):null}).filter(Boolean);
-      if(paths.length){const {error:se}=await supabase.storage.from('product-media').remove(paths);if(se)console.warn('Product deleted, but some media files could not be removed:',se.message)}
-      setNotice('Product permanently deleted.');
-    }
+    const {data,error}=await supabase.rpc('admin_delete_product',{p_product_id:product.id});
+    if(error)throw error;
+    const result=Array.isArray(data)?data[0]:data;
+    if(!result?.success)throw new Error(result?.message||'Product could not be deleted.');
+    setNotice(result.action==='archived'
+      ?'Product archived because it has sales history. It was removed from the active catalog.'
+      :'Product permanently deleted.');
     await load();
-  }catch(err){setNotice(err?.message||String(err))}
+  }catch(err){setNotice(`Delete failed: ${err?.message||String(err)}`)}
  };
  const cards=[["Revenue",`$${stats.revenue.toFixed(2)}`,Wallet],["Orders",String(stats.orders),ShoppingBag],["Inventory",String(stats.inventory),Boxes],["Net result",`$${stats.net.toFixed(2)}`,BarChart3]];
  const Field=({name,placeholder,type='text',required=false})=><input name={name} placeholder={placeholder} type={type} required={required}/>;
