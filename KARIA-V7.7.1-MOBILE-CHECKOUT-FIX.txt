@@ -1,0 +1,8 @@
+KARIA V7.7.1
+- Fixes SECURE CHECKOUT navigation on mobile.
+- Cart is synchronously saved before navigation.
+- Uses window.location.assign('/checkout') for reliable mobile navigation.
+- Checkout button is explicit type=button and prevents overlay/backdrop event interference.
+- Adds touch-action/pointer-events/z-index protection for the mobile checkout button.
+- Existing desktop checkout, Admin, Inventory, Orders and Super Admin features retained.
+No SQL migration required.
