@@ -1,0 +1,11 @@
+KARIA V7.25
+- Orders layout reorganized to prevent overlapping text.
+- Coupons redesigned without UUID/null/technical values.
+- Coupon display: code, discount, status, expiration, actions.
+- Coupon EDIT full form.
+- Coupon ACTIVATE/DEACTIVATE.
+- Coupon DELETE with confirmation.
+- Coupon validation: percentage OR fixed amount, not both.
+- Existing Stripe/Accounting/Product/Inventory logic preserved.
+
+Database note: coupons RLS and created_at/updated_at migrations must already be applied in Supabase.
