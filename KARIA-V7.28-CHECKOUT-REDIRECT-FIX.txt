@@ -1,0 +1,9 @@
+KARIA V7.28 - CHECKOUT REDIRECT FIX
+
+Fix:
+- Checkout now accepts a successful create-checkout response when checkout_url is present even if the Edge Function response does not include ok:true.
+- Prevents the false "Checkout could not be created" message after Supabase already created the Stripe Checkout Session.
+- Existing coupon, Stripe, order, inventory and accounting logic is unchanged.
+
+Expected flow:
+$40 subtotal - KARIA05 5% ($2) = $38 -> Stripe Checkout $38.
