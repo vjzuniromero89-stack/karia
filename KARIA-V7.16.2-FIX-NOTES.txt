@@ -1,0 +1,12 @@
+KARIA V7.16.2
+Fixes Admin > Categories error:
+  column categories.created_at does not exist
+
+Cause:
+The generic Admin loader sorted every table by created_at, but the original categories table did not have that column.
+
+Fix:
+- Categories now load ordered by name instead of created_at.
+- Migration also adds created_at for future auditing/compatibility.
+- Keeps active/RLS category management from V7.16.1.
+- All previous KARIA functionality retained.
