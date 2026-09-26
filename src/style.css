@@ -28,3 +28,5 @@ footer{background:#0f0e0c;color:#d9cfc2;padding:7vw;display:grid;grid-template-c
 @media(max-width:850px){.homeEditorial .editorialGrid{grid-template-columns:1fr}.editorialImage,.editorialImage.second{height:65vh;margin-top:0}.catalogMain{padding:110px 6vw 12vw}.catalogTools{grid-template-columns:1fr}.catalogGrid{grid-template-columns:1fr}.catalogImage{height:68vh}.productPage{grid-template-columns:1fr;padding:100px 6vw 12vw}.productGallery{height:65vh;position:relative;top:auto}.productInfo{padding-top:0}}
 
 .actionsCell{min-width:120px;text-align:right}.dangerBtn{border:1px solid #9b3a32!important;background:#fff7f5!important;color:#8c2d27!important;padding:10px 16px!important;cursor:pointer;font-size:11px;letter-spacing:.12em}.dangerBtn:hover{background:#8c2d27!important;color:#fff!important}
+
+.formHelp{grid-column:1/-1;margin:-6px 0 8px;color:#71685e;font-size:13px;line-height:1.55}
