@@ -1,0 +1,6 @@
+KARIA V7.6.1
+FIXED: Admin Users blank page.
+Cause: V7.6 referenced profile/user variables outside the Admin component scope, causing a React runtime render error.
+Fix: Admin now loads the current authenticated user's id/role inside the component and uses those values for the Super Admin-only RESET PASSWORD button.
+No database migration required.
+The admin-update-user Edge Function from V7.6 is still required for password reset.
