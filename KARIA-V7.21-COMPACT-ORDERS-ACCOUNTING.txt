@@ -1,0 +1,6 @@
+KARIA V7.21
+- Orders admin cards made substantially more compact for large order histories.
+- Product photo reduced to a small thumbnail while preserving visual identification.
+- Order number, status, customer, total and View Order remain visible.
+- Accounting sale Description is constrained to a single table line with ellipsis and can no longer expand the row vertically.
+- No database migration required.

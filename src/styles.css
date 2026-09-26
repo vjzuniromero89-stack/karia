@@ -1,0 +1,17 @@
+
+/* KARIA V7.21 — compact order history + one-line accounting descriptions */
+.orderAdminGrid{gap:8px}
+.orderAdminCard{grid-template-columns:86px 1fr;border-radius:12px;min-height:96px}
+.orderCardPhoto{min-height:96px;height:100%;font-size:8px}
+.orderCardPhoto span{right:5px;bottom:5px;padding:3px 6px;font-size:9px}
+.orderCardBody{padding:10px 14px}
+.orderCardTop h3{font-size:19px;margin:0}
+.orderCardTop small,.orderCardBottom small{font-size:7px;letter-spacing:1.3px}
+.orderStatus{padding:4px 8px;font-size:9px}
+.orderProductName{font-size:14px;margin:5px 0 3px}
+.orderMeta{gap:12px;font-size:11px;margin-bottom:7px;line-height:1.2}
+.orderCardBottom{padding-top:7px}
+.orderCardBottom strong{font-size:17px}
+.orderCardBottom button{padding:7px 10px;font-size:10px}
+.fullSaleTable .descriptionCell{width:250px;max-width:250px;white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
+@media(max-width:700px){.orderAdminCard{grid-template-columns:70px 1fr}.orderCardPhoto{min-height:90px}.orderCardBody{padding:9px 10px}.orderCardBottom{align-items:center;flex-direction:row}.orderMeta{gap:6px}.fullSaleTable .descriptionCell{width:180px;max-width:180px}}
