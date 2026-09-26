@@ -1,0 +1,7 @@
+KARIA V7.20 — VISUAL ORDERS
+- Replaces raw UUID order table with visual order cards.
+- Shows product photo, order number, payment status, customer email, date and total.
+- VIEW ORDER opens full order details with product photos, quantities, prices, shipping address, totals, tracking and Stripe references.
+- Paid orders no longer show DELETE. Pending/cancelled test orders retain DELETE.
+- Preserves Stripe Checkout V7.19 and all prior features.
+- No SQL migration required.
