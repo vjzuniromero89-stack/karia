@@ -1,0 +1,7 @@
+KARIA V7.12
+Hero KARIA Universe retained.
+Below it: cinematic category compositions + New at KARIA only.
+Removed repetitive lower homepage scenes.
+Real Supabase product imagery feeds both category compositions and New at KARIA.
+Existing Admin, Accounting, Inventory, Orders, Checkout and authentication retained.
+No SQL required.

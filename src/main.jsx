@@ -83,7 +83,7 @@ function App(){
  if(path.startsWith("/product/")) return <ProductPage products={storeProducts} id={decodeURIComponent(path.split("/").pop())} add={add} cart={cart} setCart={setCart} cartOpen={cartOpen} setCartOpen={setCartOpen} checkout={checkout}/>;
  return <div className="site">
   <header className={menu?"menuHeaderOpen":""}><button className="icon mobile" onClick={()=>setMenu(!menu)}>{menu?<X/>:<Menu/>}</button><a className="logo" href="#top">KARIA</a>
-   <nav className={menu?"open":""}><a href="/shop" onClick={()=>setMenu(false)}>SHOP</a><a href="#story" onClick={()=>setMenu(false)}>THE CRAFT</a><a href="#brands" onClick={()=>setMenu(false)}>BRANDS</a><a href="#contact" onClick={()=>setMenu(false)}>CONTACT</a></nav>
+   <nav className={menu?"open":""}><a href="/shop" onClick={()=>setMenu(false)}>SHOP</a><a href="#categories" onClick={()=>setMenu(false)}>CATEGORIES</a><a href="#new" onClick={()=>setMenu(false)}>NEW</a><a href="#contact" onClick={()=>setMenu(false)}>CONTACT</a></nav>
    <div className="actions"><Search/><button className="accountIcon" aria-label="Account" onClick={()=>setAccountOpen(true)}><User/></button><button className="bag" onClick={()=>setCartOpen(true)}><ShoppingBag/><b>{cart.length}</b></button></div>
   </header>
   {menu&&<div className="mobileMenuBackdrop" onClick={()=>setMenu(false)} aria-hidden="true"/>}
@@ -95,17 +95,39 @@ function App(){
     <div className="universeHalo h1"></div><div className="universeHalo h2"></div><div className="heroVertical">KARIA · ONE STORE · MANY WORLDS</div><div className="scrollOrb"><MoveDown/><span>EXPLORE</span></div>
    </section>
 
-   <section className="statement universeStatement"><div className="marquee"><span>STYLE&nbsp; · &nbsp;BEAUTY&nbsp; · &nbsp;HOME&nbsp; · &nbsp;LIFESTYLE&nbsp; · &nbsp;ACCESSORIES&nbsp; · &nbsp;NEW&nbsp; · &nbsp;</span><span>STYLE&nbsp; · &nbsp;BEAUTY&nbsp; · &nbsp;HOME&nbsp; · &nbsp;LIFESTYLE&nbsp; · &nbsp;ACCESSORIES&nbsp; · &nbsp;NEW&nbsp; · &nbsp;</span></div><p>KARIA is not one category. It is a universe of things worth discovering.</p></section>
+   <section className="categoryWorlds" id="categories">
+    <div className="categoryWorldsHead"><div><small>01 — EXPLORE YOUR WORLD</small><h2>Different worlds.<br/><i>One KARIA.</i></h2></div><p>Explore KARIA by category. Each world is designed like a small cinematic campaign — products floating in space, depth, light and motion.</p></div>
+    <div className="worldCompositions">
+     {[
+      {name:"STYLE",sub:"Fashion · Bags · Accessories",cls:"styleWorld",a:0,b:1,c:2},
+      {name:"BEAUTY",sub:"Beauty · Fragrance · Self care",cls:"beautyWorld",a:1,b:2,c:0},
+      {name:"HOME",sub:"Home · Decor · Everyday living",cls:"homeWorld",a:2,b:0,c:1},
+      {name:"LIFESTYLE",sub:"Objects · Essentials · Discoveries",cls:"lifeWorld",a:0,b:2,c:1}
+     ].map((w,i)=><a href="/shop" className={`worldComposition ${w.cls}`} key={w.name}>
+       <div className="worldNumber">0{i+1}</div>
+       <div className="compositionStage">
+        <span className="compositionArc arcA"></span><span className="compositionArc arcB"></span><span className="compositionLine lineA"></span>
+        <div className="productFloat productMain"><img src={storeProducts[w.a]?.img||["/products/bag-brown.jpg","/products/bag-blue.jpg","/products/bag-detail.jpg"][w.a]}/></div>
+        <div className="productFloat productSide"><img src={storeProducts[w.b]?.img||["/products/bag-brown.jpg","/products/bag-blue.jpg","/products/bag-detail.jpg"][w.b]}/></div>
+        <div className="productFloat productTiny"><img src={storeProducts[w.c]?.img||["/products/bag-brown.jpg","/products/bag-blue.jpg","/products/bag-detail.jpg"][w.c]}/></div>
+        <span className="floatingSphere sphereA"></span><span className="floatingSphere sphereB"></span>
+       </div>
+       <div className="worldMeta"><small>{w.sub}</small><h3>{w.name}</h3><span>EXPLORE <ArrowRight/></span></div>
+      </a>)}
+    </div>
+   </section>
 
-   <section className="worlds" id="discover"><div className="worldIntro"><small>01 — EXPLORE THE UNIVERSE</small><h2>Many worlds.<br/><i>One KARIA.</i></h2><p>Move through categories, moods and discoveries. The collection changes as KARIA grows.</p></div><div className="worldOrbit"><div className="worldCore">K</div><div className="worldRing wr1"><a href="/shop">STYLE</a></div><div className="worldRing wr2"><a href="/shop">BEAUTY</a></div><div className="worldRing wr3"><a href="/shop">HOME</a></div><span className="worldDot wd1">LIFESTYLE</span><span className="worldDot wd2">ACCESSORIES</span><span className="worldDot wd3">NEW</span></div></section>
-
-   <section className="categoryCinema"><div className="categoryFrame cf1"><img src={storeProducts[0]?.img||"/products/bag-brown.jpg"}/><div><small>02 / STYLE</small><h2>Make it<br/><i>yours.</i></h2></div></div><div className="categoryFrame cf2"><img src={storeProducts[1]?.img||"/products/bag-blue.jpg"}/><div><small>03 / DISCOVER</small><h2>Something<br/><i>unexpected.</i></h2></div></div><div className="categoryFrame cf3"><img src={storeProducts[2]?.img||"/products/bag-detail.jpg"}/><div><small>04 / KARIA EDIT</small><h2>Chosen for<br/><i>your world.</i></h2></div></div></section>
-
-   <section className="orbitShowcase universeBrands" id="brands"><div className="orbitCopy"><small>05 — BRANDS AT KARIA</small><h2>Different brands.<br/>One destination.</h2><p>Each brand keeps its identity while becoming part of the wider KARIA universe.</p><a className="cta" href="/shop">DISCOVER ALL <ArrowRight/></a></div><div className="orbitStage"><div className="orbitRing r1"></div><div className="orbitRing r2"></div><img className="orbitBag one" src={storeProducts[0]?.img||"/products/bag-brown.jpg"}/><img className="orbitBag two" src={storeProducts[1]?.img||"/products/bag-blue.jpg"}/><span className="orbitLabel l1">NEW WORLD / 01</span><span className="orbitLabel l2">NEW WORLD / 02</span></div></section>
-
-   <section id="shop" className="shop homeEditorial"><div className="sectionHead"><div><span>06 — NEW AT KARIA</span><h2>Enter the collection.</h2></div><p>New products. New categories.<br/>One evolving store.</p></div><div className="editorialGrid"><div className="editorialImage"><img src={storeProducts[0]?.img||"/products/bag-brown.jpg"}/></div><div className="editorialImage second"><img src={storeProducts[1]?.img||"/products/bag-blue.jpg"}/></div></div><div className="editorialCta"><a className="cta" href="/shop">SHOP ALL KARIA <ArrowRight/></a></div></section>
-
-   <section className="closing universeClosing"><div className="closingWord">KARIA</div><div className="closingCard"><small>YOUR WORLD / YOUR KARIA</small><h2>Find your<br/>next favorite.</h2><a href="/shop">Explore KARIA <ArrowRight/></a></div><img src={storeProducts[2]?.img||"/products/bag-detail.jpg"}/></section>
+   <section className="newKaria" id="new">
+    <div className="newKariaHead"><div><small>02 — NEW AT KARIA</small><h2>Fresh discoveries.</h2></div><a href="/shop">SHOP ALL <ArrowRight/></a></div>
+    <div className="newProductRail">
+     {storeProducts.slice(0,4).map((p,i)=><a className="newProductCard" href={`/product/${p.id}`} key={p.id||i}><div className="newProductImage"><img src={p.img}/><span>0{i+1}</span></div><div><small>{p.brand||"KARIA"}</small><h3>{p.name}</h3><b>${Number(p.price||0).toFixed(2)}</b></div></a>)}
+     {!storeProducts.length&&<>
+      <a className="newProductCard" href="/shop"><div className="newProductImage"><img src="/products/bag-brown.jpg"/><span>01</span></div><div><small>KARIA</small><h3>Discover the collection</h3></div></a>
+      <a className="newProductCard" href="/shop"><div className="newProductImage"><img src="/products/bag-blue.jpg"/><span>02</span></div><div><small>KARIA</small><h3>New worlds arriving</h3></div></a>
+     </>}
+    </div>
+    <div className="newKariaClosing"><span>ONE STORE</span><b>KARIA</b><span>MANY WORLDS</span></div>
+   </section>
   </main>
   <footer id="contact"><div><div className="logo">KARIA</div><p>Fashion, beauty, home, lifestyle & more.<br/>Curated by KARIA.</p></div><div className="footLinks"><a href="/shop">Shop</a><a href="#discover">Discover</a><a href="#brands">Brands</a><a href="#">Shipping & returns</a></div><div className="newsletter"><small>JOIN THE KARIA LETTER</small><div><input placeholder="Your email address"/><button>→</button></div></div>{canAdmin&&<button className="adminLink" onClick={()=>setAdmin(true)}>Admin</button>}<div className="copyright">© 2026 KARIA · ONE STORE · MANY WORLDS</div></footer>
  </div>
