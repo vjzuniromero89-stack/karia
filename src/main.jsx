@@ -353,33 +353,30 @@ function Admin({back}){
  };
  const deleteProduct=async(product)=>{
   if(!product?.id)return;
-  const ok=window.confirm(`Delete "${product.name||'this product'}"?\n\nIf it already has sales or production history, KARIA will archive it instead so accounting/history are preserved.`);
-  if(!ok)return;
+  if(!window.confirm(`Delete "${product.name||'this product'}"?\n\nProducts with sales history will be archived so order/accounting history stays intact. Products without sales history will be permanently deleted.`))return;
   setNotice('');
   try{
-    const [{count:orderCount,error:oe},{count:productionCount,error:pe}]=await Promise.all([
-      supabase.from('order_items').select('id',{count:'exact',head:true}).eq('product_id',product.id),
-      supabase.from('production_orders').select('id',{count:'exact',head:true}).eq('product_id',product.id)
-    ]);
-    if(oe)throw oe;if(pe)throw pe;
-    if((orderCount||0)>0||(productionCount||0)>0){
-      const {error}=await supabase.from('products').update({active:false}).eq('id',product.id);
+    const {count:orderCount,error:oe}=await supabase.from('order_items').select('id',{count:'exact',head:true}).eq('product_id',product.id);
+    if(oe)throw oe;
+    if((orderCount||0)>0){
+      const {data:archived,error}=await supabase.from('products').update({active:false}).eq('id',product.id).select('id');
       if(error)throw error;
-      setNotice('Product has transaction history, so it was archived instead of permanently deleted.');
+      if(!archived?.length)throw new Error('The product could not be archived. Check Admin product permissions.');
+      setNotice('Product archived. It has sales history, so KARIA preserved it for orders/accounting and removed it from the active catalog.');
     }else{
-      const {data:media,error:me}=await supabase.from('product_media').select('url').eq('product_id',product.id);
-      if(me)throw me;
-      const {error:ie}=await supabase.from('inventory_movements').delete().eq('product_id',product.id);
-      if(ie)throw ie;
-      const {error:de}=await supabase.from('products').delete().eq('id',product.id);
+      const [{data:media,error:me},{error:ie}]=await Promise.all([
+        supabase.from('product_media').select('id,url').eq('product_id',product.id),
+        supabase.from('inventory_movements').delete().eq('product_id',product.id)
+      ]);
+      if(me)throw me;if(ie)throw ie;
+      const {error:mde}=await supabase.from('product_media').delete().eq('product_id',product.id);
+      if(mde)throw mde;
+      const {data:deleted,error:de}=await supabase.from('products').delete().eq('id',product.id).select('id');
       if(de)throw de;
-      const paths=(media||[]).map(m=>{
-        const marker='/storage/v1/object/public/product-media/';
-        const i=String(m.url||'').indexOf(marker);
-        return i>=0?decodeURIComponent(String(m.url).slice(i+marker.length)):null;
-      }).filter(Boolean);
-      if(paths.length)await supabase.storage.from('product-media').remove(paths);
-      setNotice('Product deleted successfully.');
+      if(!deleted?.length)throw new Error('The product was not deleted. Check Admin product delete permissions.');
+      const paths=(media||[]).map(m=>{const marker='/storage/v1/object/public/product-media/';const i=String(m.url||'').indexOf(marker);return i>=0?decodeURIComponent(String(m.url).slice(i+marker.length)):null}).filter(Boolean);
+      if(paths.length){const {error:se}=await supabase.storage.from('product-media').remove(paths);if(se)console.warn('Product deleted, but some media files could not be removed:',se.message)}
+      setNotice('Product permanently deleted.');
     }
     await load();
   }catch(err){setNotice(err?.message||String(err))}

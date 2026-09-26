@@ -1,0 +1,8 @@
+KARIA V7.16.3 — PRODUCT DELETE FIX
+- Fixed Product delete flow.
+- Production history no longer blocks deletion because Production was removed from KARIA's active workflow.
+- If a product has SALES history: archive it (active=false) to preserve Orders/Accounting.
+- If a product has NO sales history: delete inventory movements, product_media DB rows, product, and storage media.
+- Verifies update/delete actually affected a row instead of showing false success.
+- Includes RLS migration for product/media/inventory deletion.
+- Existing categories, shop, NEW, Phone Universe, accounting, checkout and admin features retained.
