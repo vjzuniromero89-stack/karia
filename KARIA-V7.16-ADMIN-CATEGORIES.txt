@@ -1,0 +1,16 @@
+KARIA V7.16 — MANAGED CATEGORIES
+Admin:
+- New Categories tab.
+- Create category.
+- Edit category.
+- Activate / deactivate category.
+- Delete category with confirmation.
+- A category assigned to products cannot be deleted; admin is told how many products use it.
+- Renaming a category updates assigned product category names.
+Products:
+- Category is no longer free text.
+- New Product uses a required dropdown populated from active rows in Supabase categories.
+Shop:
+- Existing V7.15 category sidebar continues to populate from product categories.
+No SQL migration required: existing categories table and products.category are used.
+All existing modules and V7.13/V7.15 storefront work retained.

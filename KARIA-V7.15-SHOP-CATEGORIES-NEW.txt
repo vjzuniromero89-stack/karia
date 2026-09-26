@@ -1,0 +1,23 @@
+KARIA V7.15
+Navigation:
+- Top menu is now SHOP · NEW · CONTACT.
+- Removed CATEGORIES from the top menu.
+
+SHOP:
+- Added permanent left category sidebar on desktop.
+- Categories are generated automatically from product category values.
+- All Products option + product counts.
+- Category filtering occurs inside Shop.
+- Mobile category sidebar becomes a horizontal category selector.
+
+NEW:
+- New dedicated /new page.
+- Displays registered products newest first using created_at.
+- NEW badges and direct Add to Bag.
+- No longer jumps to a section on the frontpage.
+
+ADMIN:
+- Existing Category field now actually saves to products.category.
+- No SQL migration required because category already exists in the current KARIA schema.
+
+All V7.14 frontpage effects and V7.10 operational modules retained.
