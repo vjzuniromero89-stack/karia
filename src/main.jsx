@@ -5,6 +5,7 @@ import {Image as DreiImage,Float,Environment} from "@react-three/drei";
 import * as THREE from "three";
 import {ShoppingBag,User,Search,ArrowRight,Menu,X,Play,MoveDown,Package,Wallet,Users,Boxes,BarChart3,Settings,ShieldCheck} from "lucide-react";
 import "./style.css";
+import {supabase,configured} from "./supabase";
 
 const products=[
  {id:1,name:"Terra Woven Bag",brand:"Independent Artisan",price:118,img:"/products/bag-brown.jpg",stock:4,tone:"Cocoa / Ivory"},
@@ -35,15 +36,22 @@ function HeroScene({progress}){
 
 function App(){
  const [cart,setCart]=useState([]),[admin,setAdmin]=useState(false),[menu,setMenu]=useState(false),[active,setActive]=useState(0);
+ const [accountOpen,setAccountOpen]=useState(false),[user,setUser]=useState(null),[profile,setProfile]=useState(null),[authMode,setAuthMode]=useState("signin"),[authError,setAuthError]=useState("");
  const progress=useRef(0);
  const add=p=>setCart(c=>[...c,p]);
+ const loadProfile=async(u)=>{if(!u||!supabase){setProfile(null);return} const {data}=await supabase.from("profiles").select("id,full_name,role,disabled").eq("id",u.id).single(); setProfile(data||null)};
+ useEffect(()=>{if(!supabase)return; supabase.auth.getSession().then(({data})=>{const u=data.session?.user||null;setUser(u);loadProfile(u)}); const {data:{subscription}}=supabase.auth.onAuthStateChange((_e,s)=>{const u=s?.user||null;setUser(u);loadProfile(u)});return()=>subscription.unsubscribe()},[]);
+ const submitAuth=async(e)=>{e.preventDefault();setAuthError("");if(!supabase){setAuthError("Supabase is not configured.");return}const fd=new FormData(e.currentTarget),email=String(fd.get("email")||""),password=String(fd.get("password")||"");let r;if(authMode==="signup")r=await supabase.auth.signUp({email,password,options:{data:{full_name:String(fd.get("name")||"")}}});else r=await supabase.auth.signInWithPassword({email,password});if(r.error)setAuthError(r.error.message);else if(authMode==="signup")setAuthError("Check your email to confirm your account.");else setAccountOpen(false)};
+ const signOut=async()=>{await supabase?.auth.signOut();setAccountOpen(false);setAdmin(false)};
+ const canAdmin=["staff","admin","super_admin"].includes(profile?.role);
  useEffect(()=>{const fn=()=>{const max=Math.max(innerHeight,document.documentElement.scrollHeight-innerHeight);const p=scrollY/max;progress.current=p;document.documentElement.style.setProperty("--sy",scrollY+"px");document.documentElement.style.setProperty("--sp",p)};fn();addEventListener("scroll",fn,{passive:true});return()=>removeEventListener("scroll",fn)},[]);
  if(admin) return <Admin back={()=>setAdmin(false)}/>;
  return <div className="site">
   <header><button className="icon mobile" onClick={()=>setMenu(!menu)}>{menu?<X/>:<Menu/>}</button><a className="logo" href="#top">KARIA</a>
    <nav className={menu?"open":""}><a href="#shop">SHOP</a><a href="#story">THE CRAFT</a><a href="#brands">BRANDS</a><a href="#contact">CONTACT</a></nav>
-   <div className="actions"><Search/><User/><button className="bag"><ShoppingBag/><b>{cart.length}</b></button></div>
+   <div className="actions"><Search/><button className="accountIcon" aria-label="Account" onClick={()=>setAccountOpen(true)}><User/></button><button className="bag"><ShoppingBag/><b>{cart.length}</b></button></div>
   </header>
+  {accountOpen&&<div className="accountBackdrop" onMouseDown={()=>setAccountOpen(false)}><section className="accountPanel" onMouseDown={e=>e.stopPropagation()}><button className="accountClose" onClick={()=>setAccountOpen(false)}><X/></button><div className="accountBrand">KARIA</div>{user?<><small className="accountEyebrow">MY ACCOUNT</small><h2>{profile?.full_name||user.email?.split("@")[0]}</h2><p className="accountEmail">{user.email}</p><div className="accountRole">{profile?.role?.replace("_"," ")||"customer"}</div>{canAdmin&&<button className="accountPrimary" onClick={()=>{setAccountOpen(false);setAdmin(true)}}>OPEN ADMINISTRATION <ArrowRight/></button>}<button className="accountSecondary" onClick={signOut}>SIGN OUT</button></>:<><small className="accountEyebrow">WELCOME TO KARIA</small><h2>{authMode==="signin"?"Sign in":"Create account"}</h2><p className="accountIntro">Access your orders, saved details and KARIA account.</p><form onSubmit={submitAuth}>{authMode==="signup"&&<input name="name" placeholder="Full name" required/>}<input name="email" type="email" placeholder="Email address" required/><input name="password" type="password" placeholder="Password" minLength="6" required/>{authError&&<p className="authError">{authError}</p>}<button className="accountPrimary" type="submit">{authMode==="signin"?"SIGN IN":"CREATE ACCOUNT"}<ArrowRight/></button></form><button className="accountSwitch" onClick={()=>{setAuthError("");setAuthMode(authMode==="signin"?"signup":"signin")}}>{authMode==="signin"?"New to KARIA? Create an account":"Already have an account? Sign in"}</button></>}</section></div>}
   <main id="top">
    <section className="heroCine">
     <div className="heroWords"><div className="eyebrow">HANDCRAFTED · CURATED BY KARIA</div><h1><span>Made by hand.</span><em>Made to be yours.</em></h1><p>Wearable pieces of craft, made slowly and chosen with intention.</p><a href="#shop" className="cta">Explore the collection <ArrowRight/></a></div>
@@ -65,7 +73,7 @@ function App(){
 
    <section className="closing"><div className="closingWord">KARIA</div><div className="closingCard"><small>THE KARIA EDIT</small><h2>Carry something<br/>with a story.</h2><a href="#shop">Discover the collection <ArrowRight/></a></div><img src="/products/bag-detail.jpg"/></section>
   </main>
-  <footer id="contact"><div><div className="logo">KARIA</div><p>Handcrafted bags & accessories.<br/>Curated with intention.</p></div><div className="footLinks"><a href="#shop">Shop</a><a href="#story">Our story</a><a href="#brands">Brands</a><a href="#">Shipping & returns</a></div><div className="newsletter"><small>JOIN THE KARIA LETTER</small><div><input placeholder="Your email address"/><button>→</button></div></div><button className="adminLink" onClick={()=>setAdmin(true)}>Admin</button><div className="copyright">© 2026 KARIA · HANDCRAFTED STORIES</div></footer>
+  <footer id="contact"><div><div className="logo">KARIA</div><p>Handcrafted bags & accessories.<br/>Curated with intention.</p></div><div className="footLinks"><a href="#shop">Shop</a><a href="#story">Our story</a><a href="#brands">Brands</a><a href="#">Shipping & returns</a></div><div className="newsletter"><small>JOIN THE KARIA LETTER</small><div><input placeholder="Your email address"/><button>→</button></div></div>{canAdmin&&<button className="adminLink" onClick={()=>setAdmin(true)}>Admin</button>}<div className="copyright">© 2026 KARIA · HANDCRAFTED STORIES</div></footer>
  </div>
 }
 
