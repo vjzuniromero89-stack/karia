@@ -146,3 +146,35 @@ create trigger on_auth_user_created after insert on auth.users for each row exec
 
 -- Seed 50/50 ownership (replace names in Admin)
 insert into partners(display_name,ownership_percent) values ('Partner A',50),('Partner B',50);
+
+-- KARIA live-admin additions
+insert into storage.buckets(id,name,public) values ('product-media','product-media',true) on conflict(id) do update set public=true;
+insert into storage.buckets(id,name,public) values ('brand-logos','brand-logos',true) on conflict(id) do update set public=true;
+
+create or replace function public.is_admin() returns boolean language sql stable security definer set search_path=public as $$
+ select exists(select 1 from profiles where id=auth.uid() and role in ('admin','super_admin'));
+$$;
+
+create policy "admins profiles" on profiles for select using(public.is_admin());
+create policy "admins products all" on products for all using(public.is_admin()) with check(public.is_admin());
+create policy "admins brands all" on brands for all using(public.is_admin()) with check(public.is_admin());
+
+alter table product_media enable row level security;
+alter table inventory_movements enable row level security;
+alter table order_items enable row level security;
+alter table partners enable row level security;
+alter table expenses enable row level security;
+alter table journal_entries enable row level security;
+alter table journal_lines enable row level security;
+create policy "public media" on product_media for select using(true);
+create policy "admins media" on product_media for all using(public.is_admin()) with check(public.is_admin());
+create policy "admins inventory" on inventory_movements for all using(public.is_admin()) with check(public.is_admin());
+create policy "admins order items" on order_items for select using(public.is_admin());
+create policy "admins partners" on partners for all using(public.is_admin()) with check(public.is_admin());
+create policy "admins expenses" on expenses for all using(public.is_admin()) with check(public.is_admin());
+create policy "admins journals" on journal_entries for all using(public.is_admin()) with check(public.is_admin());
+create policy "admins journal lines" on journal_lines for all using(public.is_admin()) with check(public.is_admin());
+create policy "admin upload product media" on storage.objects for insert to authenticated with check(bucket_id='product-media' and public.is_admin());
+create policy "admin update product media" on storage.objects for update to authenticated using(bucket_id='product-media' and public.is_admin());
+create policy "admin delete product media" on storage.objects for delete to authenticated using(bucket_id='product-media' and public.is_admin());
+create policy "public read product media" on storage.objects for select using(bucket_id in ('product-media','brand-logos'));
