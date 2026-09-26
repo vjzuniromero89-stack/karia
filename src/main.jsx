@@ -217,7 +217,7 @@ function App(){
 
 function Admin({back}){
  const [tab,setTab]=useState('Dashboard'),[rows,setRows]=useState([]),[loading,setLoading]=useState(false),[notice,setNotice]=useState('');
- const [brands,setBrands]=useState([]),[categories,setCategories]=useState([]),[productsList,setProductsList]=useState([]),[uploading,setUploading]=useState(false);
+ const [brands,setBrands]=useState([]),[categories,setCategories]=useState([]),[productsList,setProductsList]=useState([]),[uploading,setUploading]=useState(false),[editingProduct,setEditingProduct]=useState(null),[editingMovement,setEditingMovement]=useState(null);
  const [stats,setStats]=useState({revenue:0,orders:0,inventory:0,net:0});
  const [inventorySummary,setInventorySummary]=useState([]),[inventoryTotals,setInventoryTotals]=useState({opening:0,received:0,sold:0,out:0,returns:0,adjustments:0,current:0,value:0});
  const [currentAdmin,setCurrentAdmin]=useState(null),[currentUserId,setCurrentUserId]=useState(null);
@@ -284,7 +284,7 @@ function Admin({back}){
  };
  const load=async()=>{if(!supabase)return;setLoading(true);setNotice('');try{
   const table={Orders:'orders',Products:'products',Categories:'categories',Brands:'brands',Inventory:'inventory_movements',Customers:'profiles',Accounting:'expenses','Admin users':'profiles',Coupons:'coupons'}[tab];
-  if(table){let q=tab==='Inventory'?supabase.from('inventory_movements').select('*, products(name,sku)').order('created_at',{ascending:false}).limit(100):tab==='Categories'?supabase.from('categories').select('*').order('name',{ascending:true}).limit(100):tab==='Products'?supabase.from('products').select('id,name,sku,description,price,unit_cost,category,active,created_at,product_media(url,media_type,sort_order)').order('created_at',{ascending:false}).limit(100):supabase.from(table).select('*').order('created_at',{ascending:false}).limit(100);if(tab==='Admin users')q=q.in('role',['staff','admin','super_admin']);const {data,error}=await q;if(error)throw error;setRows(data||[])}
+  if(table){let q=tab==='Inventory'?supabase.from('inventory_movements').select('*, products(name,sku)').order('created_at',{ascending:false}).limit(100):tab==='Categories'?supabase.from('categories').select('*').order('name',{ascending:true}).limit(100):tab==='Products'?supabase.from('products').select('id,name,sku,description,price,unit_cost,category,brand_id,materials,dimensions,weight,low_stock_threshold,featured,active,created_at,product_media(url,media_type,sort_order)').order('created_at',{ascending:false}).limit(100):supabase.from(table).select('*').order('created_at',{ascending:false}).limit(100);if(tab==='Admin users')q=q.in('role',['staff','admin','super_admin']);const {data,error}=await q;if(error)throw error;setRows(data||[])}
   const [{data:o},{data:im},{data:ex}]=await Promise.all([supabase.from('orders').select('total,status'),supabase.from('inventory_movements').select('quantity,qty,movement_type'),supabase.from('expenses').select('amount')]);
   const paid=(o||[]).filter(x=>['paid','processing','shipped','delivered'].includes(String(x.status).toLowerCase()));const rev=paid.reduce((s,x)=>s+Number(x.total||0),0);const inv=(im||[]).reduce((s,x)=>{const n=Number(x.quantity??x.qty??0);return s+(['out','sale','consume'].includes(String(x.movement_type).toLowerCase())?-Math.abs(n):n)},0);const expenses=(ex||[]).reduce((s,x)=>s+Number(x.amount||0),0);setStats({revenue:rev,orders:(o||[]).length,inventory:inv,net:rev-expenses});
   if(tab==='Inventory')await loadInventoryAccounting();
@@ -359,42 +359,23 @@ function Admin({back}){
   }
   await load();
  };
- const editProduct=async(product)=>{
-  if(!product?.id)return;
-  const name=prompt('Product name',product.name||'');if(name===null)return;
-  const sku=prompt('SKU',product.sku||'');if(sku===null)return;
-  const category=prompt('Category',product.category||'');if(category===null)return;
-  const description=prompt('Description',product.description||'');if(description===null)return;
-  const price=prompt('Sale price',product.price??'');if(price===null)return;
-  const cost=prompt('Unit cost',product.unit_cost??'');if(cost===null)return;
-  setNotice('Saving product…');
+ const editProduct=(product)=>setEditingProduct(product);
+ const saveProductEdit=async(e)=>{
+  e.preventDefault();const f=Object.fromEntries(new FormData(e.currentTarget));setNotice('Saving product…');
   try{
-    const {data,error}=await supabase.from('products').update({
-      name:name.trim(),sku:sku.trim(),category:category.trim()||null,description:description.trim()||null,
-      price:price===''?0:Number(price),unit_cost:cost===''?0:Number(cost)
-    }).eq('id',product.id).select('id');
-    if(error)throw error;if(!data?.length)throw new Error('Product update affected no rows.');
-    setNotice('Product updated successfully.');await load();
+    const payload={name:f.name.trim(),sku:f.sku.trim(),brand_id:f.brand_id||null,category:f.category||null,description:f.description.trim()||null,materials:f.materials.trim()||null,dimensions:f.dimensions.trim()||null,price:Number(f.price||0),unit_cost:Number(f.unit_cost||0),weight:f.weight?Number(f.weight):null,low_stock_threshold:Number(f.low_stock_threshold||2),active:f.active==='true',featured:f.featured==='on'};
+    const {data,error}=await supabase.from('products').update(payload).eq('id',editingProduct.id).select('id');if(error)throw error;if(!data?.length)throw new Error('Product update affected no rows.');
+    setEditingProduct(null);setNotice('Product updated successfully.');await load();
   }catch(err){setNotice(`Edit failed: ${err?.message||String(err)}`)}
  };
- const editInventoryMovement=async(movement)=>{
-  if(!movement?.id)return;
-  const oldQty=movement.qty??movement.quantity??'';
-  const quantity=prompt('Quantity',String(oldQty));if(quantity===null)return;
-  if(quantity===''||!Number.isFinite(Number(quantity))){setNotice('Enter a valid quantity.');return}
-  const note=prompt('Reason / reference',movement.note||'');if(note===null)return;
-  const isOpening=String(movement.note||'').toLowerCase().includes('opening stock');
-  const allowed=['IN','OUT','RETURN','ADJUST','PRODUCTION_IN'];
-  const current=isOpening?'ADJUST':String(movement.movement_type||'ADJUST').toUpperCase();
-  const typeInput=prompt('Movement type: IN, OUT, RETURN, ADJUST, PRODUCTION_IN',current);if(typeInput===null)return;
-  const movementType=String(typeInput).trim().toUpperCase();
-  if(!allowed.includes(movementType)){setNotice('Invalid movement type. Use IN, OUT, RETURN, ADJUST or PRODUCTION_IN.');return}
-  const finalNote=isOpening?`OPENING STOCK${note.trim()?' · '+note.trim():''}`:(note.trim()||null);
-  setNotice('Saving inventory movement…');
+ const editInventoryMovement=(movement)=>setEditingMovement(movement);
+ const saveMovementEdit=async(e)=>{
+  e.preventDefault();const f=Object.fromEntries(new FormData(e.currentTarget));setNotice('Saving inventory movement…');
   try{
-    const {data,error}=await supabase.from('inventory_movements').update({qty:Number(quantity),movement_type:movementType,note:finalNote}).eq('id',movement.id).select('id');
-    if(error)throw error;if(!data?.length)throw new Error('Inventory movement update affected no rows.');
-    setNotice('Inventory movement updated successfully.');await load();
+    const isOpening=String(editingMovement.note||'').toLowerCase().includes('opening stock');
+    const note=isOpening?`OPENING STOCK${f.note?.trim()?' · '+f.note.trim():''}`:(f.note?.trim()||null);
+    const {data,error}=await supabase.from('inventory_movements').update({product_id:f.product_id,qty:Number(f.qty),movement_type:f.movement_type,note}).eq('id',editingMovement.id).select('id');if(error)throw error;if(!data?.length)throw new Error('Inventory movement update affected no rows.');
+    setEditingMovement(null);setNotice('Inventory movement updated successfully.');await load();
   }catch(err){setNotice(`Edit failed: ${err?.message||String(err)}`)}
  };
  const deleteProduct=async(product)=>{
@@ -428,7 +409,10 @@ function Admin({back}){
   if(tab==='Settings')return <form className="adminForm wide" onSubmit={e=>create(e,'settings')}><h2>Store settings</h2><Field name="store_name" placeholder="Store name"/><Field name="currency" placeholder="Currency (USD)"/><Field name="shipping_rate" placeholder="Default shipping rate" type="number"/><Field name="free_shipping_over" placeholder="Free shipping over" type="number"/><Field name="returns_days" placeholder="Returns window (days)" type="number"/><button>SAVE SETTINGS</button><p>Stripe and Supabase secret keys never belong in the browser.</p></form>;
   return <DataTable rows={rows}/>;
  };
- return <div className="admin"><aside><div className="logo">KARIA</div><small>ADMINISTRATION</small>{nav.map(([x,I])=><button className={tab===x?'selected':''} key={x} onClick={()=>setTab(x)}><I/>{x}</button>)}<button onClick={back}>← Storefront</button></aside><section className="adminMain"><div className="adminTop"><div><small>KARIA OPERATIONS</small><h1>{tab}</h1></div><div className="owners"><b>Ownership</b><span>Partner A 50%</span><span>Partner B 50%</span></div></div>{notice&&<div className="notice">{notice}</div>}{loading?<div className="panel">Loading…</div>:module()}</section></div>
+ return <div className="admin"><aside><div className="logo">KARIA</div><small>ADMINISTRATION</small>{nav.map(([x,I])=><button className={tab===x?'selected':''} key={x} onClick={()=>setTab(x)}><I/>{x}</button>)}<button onClick={back}>← Storefront</button></aside><section className="adminMain"><div className="adminTop"><div><small>KARIA OPERATIONS</small><h1>{tab}</h1></div><div className="owners"><b>Ownership</b><span>Partner A 50%</span><span>Partner B 50%</span></div></div>{notice&&<div className="notice">{notice}</div>}{loading?<div className="panel">Loading…</div>:module()}</section>
+{editingProduct&&<div className="editModalBackdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setEditingProduct(null)}}><div className="editModal"><div className="editModalHead"><div><small>EDIT PRODUCT</small><h2>{editingProduct.name}</h2></div><button type="button" onClick={()=>setEditingProduct(null)}>×</button></div><form className="editModalForm" onSubmit={saveProductEdit}><label>Product name<input name="name" defaultValue={editingProduct.name||''} required/></label><label>SKU<input name="sku" defaultValue={editingProduct.sku||''} required/></label><label>Brand<select name="brand_id" defaultValue={editingProduct.brand_id||''}><option value="">No brand</option>{brands.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label><label>Category<select name="category" defaultValue={editingProduct.category||''} required><option value="">Select category</option>{categories.map(c=><option key={c.id} value={c.name}>{c.name}</option>)}</select></label><label>Sale price<input name="price" type="number" step="0.01" defaultValue={editingProduct.price??''}/></label><label>Unit cost<input name="unit_cost" type="number" step="0.01" defaultValue={editingProduct.unit_cost??''}/></label><label>Weight<input name="weight" type="number" step="0.001" defaultValue={editingProduct.weight??''}/></label><label>Low stock alert<input name="low_stock_threshold" type="number" defaultValue={editingProduct.low_stock_threshold??2}/></label><label>Materials<input name="materials" defaultValue={editingProduct.materials||''}/></label><label>Dimensions<input name="dimensions" defaultValue={editingProduct.dimensions||''}/></label><label className="full">Description<textarea name="description" defaultValue={editingProduct.description||''}/></label><label>Status<select name="active" defaultValue={editingProduct.active===false?'false':'true'}><option value="true">Active / Published</option><option value="false">Archived / Hidden</option></select></label><label className="editCheck"><input name="featured" type="checkbox" defaultChecked={!!editingProduct.featured}/> Featured product</label><div className="editModalActions full"><button type="button" onClick={()=>setEditingProduct(null)}>CANCEL</button><button type="submit">SAVE PRODUCT</button></div></form></div></div>}
+{editingMovement&&<div className="editModalBackdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setEditingMovement(null)}}><div className="editModal inventoryEditModal"><div className="editModalHead"><div><small>EDIT INVENTORY MOVEMENT</small><h2>{editingMovement.products?.name||'Inventory entry'}</h2></div><button type="button" onClick={()=>setEditingMovement(null)}>×</button></div><form className="editModalForm" onSubmit={saveMovementEdit}><label className="full">Product<select name="product_id" defaultValue={editingMovement.product_id||''} required>{productsList.map(p=><option key={p.id} value={p.id}>{p.name} · {p.sku}</option>)}</select></label><label>Quantity<input name="qty" type="number" defaultValue={editingMovement.qty??editingMovement.quantity??''} required/></label><label>Movement type<select name="movement_type" defaultValue={editingMovement.movement_type||'ADJUST'}><option value="IN">IN / RECEIVED</option><option value="OUT">OUT</option><option value="RETURN">RETURN</option><option value="ADJUST">ADJUSTMENT</option><option value="PRODUCTION_IN">PRODUCTION IN</option></select></label><label className="full">Reason / reference<textarea name="note" defaultValue={String(editingMovement.note||'').replace(/^OPENING STOCK\s*[·-]?\s*/i,'')}/></label><div className="editModalActions full"><button type="button" onClick={()=>setEditingMovement(null)}>CANCEL</button><button type="submit">SAVE MOVEMENT</button></div></form></div></div>}
+</div>
 }
 function ProductAdminTable({rows,onEdit,onDelete}){
  if(!rows?.length)return <div className="panel empty">No products yet.</div>;

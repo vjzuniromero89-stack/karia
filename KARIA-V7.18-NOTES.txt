@@ -1,0 +1,15 @@
+KARIA V7.18 — FULL EDIT FORMS
+Replaces browser prompt-by-prompt editing.
+
+Product EDIT opens one large KARIA modal containing:
+name, SKU, brand, category, sale price, unit cost, weight, low-stock alert,
+materials, dimensions, description, status/published and Featured Product.
+All fields can be reviewed before one SAVE PRODUCT action.
+
+Inventory movement EDIT opens one modal containing:
+product, quantity, movement type and reason/reference.
+One SAVE MOVEMENT action.
+
+Existing DELETE actions, product photos/table, Categories, Shop, NEW,
+Phone Universe, accounting, checkout and scroll-top fix retained.
+No SQL migration required.
