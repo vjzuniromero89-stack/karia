@@ -1,0 +1,7 @@
+KARIA V7.5
+- Orders admin now shows DELETE ORDER for pending/cancelled test orders.
+- Deleting an order first deletes its order_items, then the order.
+- Products and inventory are not deleted.
+- Paid/processing/shipped/delivered orders cannot be hard-deleted.
+- Checkout submit has an additional duplicate-submit guard.
+- Adding to cart and opening /checkout do not create orders.
