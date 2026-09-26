@@ -1,0 +1,6 @@
+KARIA V7.17.1 — HOME REFRESH SCROLL FIX
+- Disables browser automatic scroll-position restoration for the KARIA SPA.
+- Forces a fresh page load/refresh to start at the top of the page.
+- Handles normal reload and browser pageshow restoration.
+- Keeps V7.17 product/inventory editing and all previous functionality.
+- No SQL migration required.

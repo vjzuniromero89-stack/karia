@@ -97,6 +97,14 @@ function CheckoutPage({cart,setCart,user}){
 }
 
 function App(){
+ useEffect(()=>{
+  if('scrollRestoration' in window.history)window.history.scrollRestoration='manual';
+  const goTop=()=>window.scrollTo({top:0,left:0,behavior:'instant'});
+  goTop();
+  const id=requestAnimationFrame(goTop);
+  window.addEventListener('pageshow',goTop);
+  return()=>{cancelAnimationFrame(id);window.removeEventListener('pageshow',goTop)};
+ },[]);
  const [cart,setCart]=useState(()=>{try{return JSON.parse(localStorage.getItem('karia_cart')||'[]')}catch{return []}}),[admin,setAdmin]=useState(false),[menu,setMenu]=useState(false),[active,setActive]=useState(0),[cartOpen,setCartOpen]=useState(false),[storeProducts,setStoreProducts]=useState(products);
  const [accountOpen,setAccountOpen]=useState(false),[user,setUser]=useState(null),[profile,setProfile]=useState(null),[authMode,setAuthMode]=useState("signin"),[authError,setAuthError]=useState(""),[passwordOpen,setPasswordOpen]=useState(false),[passwordNotice,setPasswordNotice]=useState("");
  const progress=useRef(0);
