@@ -126,12 +126,45 @@ function Admin({back}){
  }catch(err){setUploading(false);setNotice(err.message)}};
  const createAdmin=async(e)=>{e.preventDefault();const form=e.currentTarget;const f=Object.fromEntries(new FormData(form));const {data,error}=await supabase.functions.invoke('admin-create-user',{body:{email:f.email,full_name:f.full_name,role:f.role}});if(error||!data?.ok){setNotice(data?.error||error?.message||'Unable to create user');return}setNotice(`Administrator created — temporary password: ${data.temporaryPassword}`);form.reset();await load()};
  const updateAdmin=async(id,role,disabled)=>{const {data,error}=await supabase.functions.invoke('admin-update-user',{body:{user_id:id,role,disabled}});setNotice(error?.message||data?.error||'Access updated.');load()};
+ const deleteProduct=async(product)=>{
+  if(!product?.id)return;
+  const ok=window.confirm(`Delete "${product.name||'this product'}"?\n\nIf it already has sales or production history, KARIA will archive it instead so accounting/history are preserved.`);
+  if(!ok)return;
+  setNotice('');
+  try{
+    const [{count:orderCount,error:oe},{count:productionCount,error:pe}]=await Promise.all([
+      supabase.from('order_items').select('id',{count:'exact',head:true}).eq('product_id',product.id),
+      supabase.from('production_orders').select('id',{count:'exact',head:true}).eq('product_id',product.id)
+    ]);
+    if(oe)throw oe;if(pe)throw pe;
+    if((orderCount||0)>0||(productionCount||0)>0){
+      const {error}=await supabase.from('products').update({active:false}).eq('id',product.id);
+      if(error)throw error;
+      setNotice('Product has transaction history, so it was archived instead of permanently deleted.');
+    }else{
+      const {data:media,error:me}=await supabase.from('product_media').select('url').eq('product_id',product.id);
+      if(me)throw me;
+      const {error:ie}=await supabase.from('inventory_movements').delete().eq('product_id',product.id);
+      if(ie)throw ie;
+      const {error:de}=await supabase.from('products').delete().eq('id',product.id);
+      if(de)throw de;
+      const paths=(media||[]).map(m=>{
+        const marker='/storage/v1/object/public/product-media/';
+        const i=String(m.url||'').indexOf(marker);
+        return i>=0?decodeURIComponent(String(m.url).slice(i+marker.length)):null;
+      }).filter(Boolean);
+      if(paths.length)await supabase.storage.from('product-media').remove(paths);
+      setNotice('Product deleted successfully.');
+    }
+    await load();
+  }catch(err){setNotice(err?.message||String(err))}
+ };
  const cards=[["Revenue",`$${stats.revenue.toFixed(2)}`,Wallet],["Orders",String(stats.orders),ShoppingBag],["Inventory",String(stats.inventory),Boxes],["Net result",`$${stats.net.toFixed(2)}`,BarChart3]];
  const Field=({name,placeholder,type='text',required=false})=><input name={name} placeholder={placeholder} type={type} required={required}/>;
  const module=()=>{
   if(tab==='Dashboard')return <><div className="cards">{cards.map(([a,b,I])=><div key={a}><I/><small>{a}</small><strong>{b}</strong><em>Live from Supabase</em></div>)}</div><div className="adminGrid"><div className="panel"><h2>Inventory movements</h2><p>Sales, production, returns and adjustments remain auditable.</p></div><div className="panel"><h2>Accounting engine</h2><p>Order → payment → sales → tax → fees → COGS → inventory → reports.</p><div className="flow">SALE → INVENTORY → LEDGER → REPORTS</div></div></div></>;
   if(tab==='Brands')return <><form className="adminForm" onSubmit={e=>create(e,'brand')}><h2>New brand</h2><Field name="name" placeholder="Brand name" required/><Field name="description" placeholder="Story / description"/><button>CREATE BRAND</button></form><DataTable rows={rows}/></>;
-  if(tab==='Products')return <><form className="adminForm wide productForm" onSubmit={e=>create(e,'product')}><h2>New product</h2><Field name="name" placeholder="Product name" required/><Field name="sku" placeholder="SKU" required/><select name="brand_id"><option value="">Select brand (optional)</option>{brands.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select><Field name="price" placeholder="Sale price" type="number" required/><Field name="cost" placeholder="Unit cost" type="number"/><Field name="stock" placeholder="Initial stock" type="number"/><Field name="weight" placeholder="Weight" type="number"/><Field name="low_stock_threshold" placeholder="Low stock alert (default 2)" type="number"/><Field name="materials" placeholder="Materials"/><Field name="dimensions" placeholder="Dimensions"/><textarea name="description" placeholder="Description and story"/><label className="uploadBox"><b>PRODUCT PHOTOS / VIDEO</b><span>Choose one or several images. The first image becomes the main product photo.</span><input name="images" type="file" accept="image/*,video/mp4,video/webm" multiple required/></label><label className="checkLine"><input name="featured" type="checkbox"/> Featured product</label><button disabled={uploading}>{uploading?'UPLOADING MEDIA…':'CREATE PRODUCT + UPLOAD MEDIA'}</button></form><DataTable rows={rows}/></>;
+  if(tab==='Products')return <><form className="adminForm wide productForm" onSubmit={e=>create(e,'product')}><h2>New product</h2><Field name="name" placeholder="Product name" required/><Field name="sku" placeholder="SKU" required/><select name="brand_id"><option value="">Select brand (optional)</option>{brands.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select><Field name="price" placeholder="Sale price" type="number" required/><Field name="cost" placeholder="Unit cost" type="number"/><Field name="stock" placeholder="Initial stock" type="number"/><Field name="weight" placeholder="Weight" type="number"/><Field name="low_stock_threshold" placeholder="Low stock alert (default 2)" type="number"/><Field name="materials" placeholder="Materials"/><Field name="dimensions" placeholder="Dimensions"/><textarea name="description" placeholder="Description and story"/><label className="uploadBox"><b>PRODUCT PHOTOS / VIDEO</b><span>Choose one or several images. The first image becomes the main product photo.</span><input name="images" type="file" accept="image/*,video/mp4,video/webm" multiple required/></label><label className="checkLine"><input name="featured" type="checkbox"/> Featured product</label><button disabled={uploading}>{uploading?'UPLOADING MEDIA…':'CREATE PRODUCT + UPLOAD MEDIA'}</button></form><DataTable rows={rows} actions={r=><button className="dangerBtn" onClick={()=>deleteProduct(r)}>DELETE</button>}/></>;
   if(tab==='Inventory')return <><form className="adminForm wide" onSubmit={e=>create(e,'inventory')}><h2>Inventory movement</h2><select name="product_id" required><option value="">Select product</option>{productsList.map(p=><option key={p.id} value={p.id}>{p.name} · {p.sku}</option>)}</select><Field name="quantity" placeholder="Quantity" type="number" required/><select name="movement_type"><option value="IN">IN</option><option value="OUT">OUT</option><option value="RETURN">RETURN</option><option value="ADJUST">ADJUSTMENT</option><option value="PRODUCTION_IN">PRODUCTION IN</option></select><Field name="note" placeholder="Note"/><button>POST MOVEMENT</button></form><DataTable rows={rows}/></>;
   if(tab==='Production')return <><form className="adminForm wide" onSubmit={e=>create(e,'production')}><h2>Production order</h2><select name="product_id" required><option value="">Select product</option>{productsList.map(p=><option key={p.id} value={p.id}>{p.name} · {p.sku}</option>)}</select><Field name="quantity" placeholder="Quantity to make" type="number" required/><Field name="notes" placeholder="Materials / artisan notes"/><button>CREATE PRODUCTION ORDER</button></form><DataTable rows={rows}/></>;
   if(tab==='Accounting')return <><form className="adminForm wide" onSubmit={e=>create(e,'expense')}><h2>Record expense</h2><Field name="description" placeholder="Description" required/><Field name="amount" placeholder="Amount" type="number" required/><Field name="category" placeholder="Category"/><Field name="expense_date" type="date"/><button>POST EXPENSE</button></form><DataTable rows={rows}/></>;
@@ -144,6 +177,6 @@ function Admin({back}){
  };
  return <div className="admin"><aside><div className="logo">KARIA</div><small>ADMINISTRATION</small>{nav.map(([x,I])=><button className={tab===x?'selected':''} key={x} onClick={()=>setTab(x)}><I/>{x}</button>)}<button onClick={back}>← Storefront</button></aside><section className="adminMain"><div className="adminTop"><div><small>KARIA OPERATIONS</small><h1>{tab}</h1></div><div className="owners"><b>Ownership</b><span>Partner A 50%</span><span>Partner B 50%</span></div></div>{notice&&<div className="notice">{notice}</div>}{loading?<div className="panel">Loading…</div>:module()}</section></div>
 }
-function DataTable({rows}){if(!rows?.length)return <div className="panel empty">No records yet.</div>;const keys=Object.keys(rows[0]).filter(k=>!['metadata','after_data','before_data'].includes(k)).slice(0,7);return <div className="tableWrap"><table><thead><tr>{keys.map(k=><th key={k}>{k.replaceAll('_',' ')}</th>)}</tr></thead><tbody>{rows.map((r,i)=><tr key={r.id||i}>{keys.map(k=><td key={k}>{typeof r[k]==='object'?JSON.stringify(r[k]):String(r[k]??'')}</td>)}</tr>)}</tbody></table></div>}
+function DataTable({rows,actions}){if(!rows?.length)return <div className="panel empty">No records yet.</div>;const keys=Object.keys(rows[0]).filter(k=>!['metadata','after_data','before_data'].includes(k)).slice(0,7);return <div className="tableWrap"><table><thead><tr>{keys.map(k=><th key={k}>{k.replaceAll('_',' ')}</th>)}{actions&&<th>ACTIONS</th>}</tr></thead><tbody>{rows.map((r,i)=><tr key={r.id||i}>{keys.map(k=><td key={k}>{typeof r[k]==='object'?JSON.stringify(r[k]):String(r[k]??'')}</td>)}{actions&&<td className="actionsCell">{actions(r)}</td>}</tr>)}</tbody></table></div>}
 
 createRoot(document.getElementById("root")).render(<App/>);
