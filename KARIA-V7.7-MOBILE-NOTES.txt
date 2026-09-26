@@ -1,0 +1,11 @@
+KARIA V7.7 MOBILE RESPONSIVE
+- Full responsive pass for Store, Shop, Product, Cart and Checkout.
+- Admin sidebar changes to horizontal scroll navigation on mobile.
+- Admin tables scroll horizontally instead of breaking the page.
+- Admin forms and user cards stack vertically.
+- Inventory cards collapse to 2 columns, then 1 on small phones.
+- Checkout becomes single-column.
+- Cart drawer uses full mobile width.
+- 16px mobile form inputs avoid unwanted iPhone zoom.
+- Existing desktop behavior and previous features retained.
+No SQL migration required.
