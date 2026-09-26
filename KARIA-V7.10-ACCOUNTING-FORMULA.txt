@@ -1,0 +1,26 @@
+KARIA V7.10
+Accounting sale ledger rebuilt.
+
+For every PAID sale line:
+- Product / description / qty
+- Unit cost
+- Unit sale price
+- Product total
+- Discount
+- Net product sale
+- Shipping deducted
+- Tax deducted
+- Customer total
+- Product cost / COGS
+- Payment processing fee
+- Final profit
+- Profit percentage
+
+Formula:
+Final profit = net product sale - product cost - shipping - tax - processor fee.
+Profit % = final profit / net product sale * 100.
+
+Order-level discount/shipping/tax/processor fee are allocated proportionally across products when an order contains multiple items.
+Pending orders remain excluded.
+Operating expenses are shown separately and reduce overall net profit.
+No SQL migration required.

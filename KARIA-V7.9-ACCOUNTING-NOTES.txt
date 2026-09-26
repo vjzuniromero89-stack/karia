@@ -1,0 +1,12 @@
+KARIA V7.9 ACCOUNTING
+- Production and Materials removed from the Admin navigation/UI.
+- Accounting becomes the financial center.
+- Paid order items are recorded automatically in the Sales Ledger.
+- Pending orders are excluded.
+- Columns: date, order, product, description, qty, unit cost, sale price, sale total, total cost, gross profit, gross margin %, markup %.
+- KPI cards: sales revenue, COGS, gross profit, gross margin, operating expenses, net profit.
+- Historical profitability uses order_items.unit_cost snapshot.
+- Existing expense entry remains and is integrated into net profit.
+- Responsive accounting table for mobile.
+- Existing Inventory, Orders, Shop, Checkout and Super Admin functionality retained.
+No SQL migration required for this UI/reporting update.
