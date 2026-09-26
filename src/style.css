@@ -36,3 +36,10 @@ footer{background:#0f0e0c;color:#d9cfc2;padding:7vw;display:grid;grid-template-c
 .opsStatus{grid-column:1/-1;background:#fff;border:1px solid #e5ded5;border-radius:16px;padding:18px 22px;margin-bottom:14px}.opsStatus small{letter-spacing:.18em;font-size:10px}.opsFlow{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px}.opsFlow span{background:#f3ece2;border-radius:999px;padding:8px 12px;font-size:10px;letter-spacing:.08em}.opsFlow b{font-weight:400;color:#9b8d7c}
 
 .inventoryActions{display:flex;gap:8px;justify-content:flex-end}.inventoryActions .dangerBtn{white-space:nowrap;background:#fff4f1;border:1px solid #c98e82;color:#8d3027;padding:8px 11px;border-radius:8px;cursor:pointer}.inventoryActions .dangerBtn:hover{background:#8d3027;color:white}
+
+.inventoryHistory{background:#fff;border:1px solid #e5ded5;border-radius:14px;overflow:auto}
+.inventoryHistory table{width:100%;border-collapse:collapse}
+.inventoryHistory th{background:#f4f0ea;font-size:9px;letter-spacing:.13em;text-align:left;padding:13px 14px;white-space:nowrap}
+.inventoryHistory td{padding:14px;border-top:1px solid #eee7de;font-size:12px;vertical-align:middle}
+.movementPill{display:inline-flex;padding:5px 9px;border-radius:999px;background:#eee7dc;font-size:9px;letter-spacing:.08em;white-space:nowrap}
+.emptyInventory{padding:24px;color:#776d62}
