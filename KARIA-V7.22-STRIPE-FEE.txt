@@ -1,0 +1,9 @@
+KARIA V7.22
+- Stripe webhook now retrieves the ACTUAL Stripe processing fee from the PaymentIntent charge balance transaction.
+- Saves the fee to orders.processor_fee.
+- Orders show Customer Paid, Stripe Fee, and Net After Stripe.
+- View Order shows Stripe fee, net after Stripe, product cost, and final profit.
+- Accounting already allocates orders.processor_fee across order lines and subtracts it from final profit.
+- Shipping, discount and tax continue to be deducted from the stored order values.
+IMPORTANT: Redeploy supabase/functions/stripe-webhook/index.ts with Verify JWT OFF.
+For an older paid order, resend its checkout.session.completed event after deploying to backfill processor_fee.
