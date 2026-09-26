@@ -21,3 +21,5 @@ footer{background:#0f0e0c;color:#d9cfc2;padding:7vw;display:grid;grid-template-c
 .securityPanel input{width:100%;box-sizing:border-box}
 .passwordAction{margin-top:18px}
 .authSuccess{margin:2px 0 0;color:#356b48;font-size:13px;line-height:1.45}
+/* V3 cumulative admin/media enhancements */
+.productForm .uploadBox{grid-column:1/-1;border:1px dashed rgba(35,29,24,.28);padding:22px;border-radius:16px;display:flex;flex-direction:column;gap:8px;background:rgba(255,255,255,.55);cursor:pointer}.productForm .uploadBox span{font-size:12px;opacity:.62}.productForm .uploadBox input{padding:10px 0;background:transparent;border:0}.checkLine{display:flex!important;align-items:center;gap:9px;font-size:12px;letter-spacing:.08em;text-transform:uppercase}.checkLine input{width:auto!important}.adminForm button:disabled{opacity:.55;cursor:wait}
