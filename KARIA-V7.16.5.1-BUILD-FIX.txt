@@ -1,0 +1,4 @@
+KARIA V7.16.5.1
+Fixed missing JSX fragment closing tag in Admin > Products.
+Retains V7.16.5 product photo/table changes and all previous functionality.
+No SQL migration required.
