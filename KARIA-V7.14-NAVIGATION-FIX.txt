@@ -1,0 +1,11 @@
+KARIA V7.14 — NAVIGATION CONSISTENCY FIX
+Corrected navigation hierarchy:
+- Frontpage is always `/`.
+- SHOP always opens `/shop` catalog.
+- CATEGORIES points to `/shop#categories`.
+- Store pages use the same menu vocabulary as frontpage:
+  SHOP · CATEGORIES · NEW · CONTACT
+- Removed old SHOP / CATALOG · DISCOVER · BRANDS menu mismatch.
+- KARIA logo returns to frontpage.
+No SQL required.
+All V7.13 visual effects and V7.10 operational modules retained.

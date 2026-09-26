@@ -34,7 +34,7 @@ function HeroScene({progress,items=[]}){
 }
 
 function StoreHeader({cartCount,onCart}){
- return <header><a className="logo" href="/">KARIA</a><nav><a href="/shop">SHOP / CATALOG</a><a href="/#discover">DISCOVER</a><a href="/#brands">BRANDS</a><a href="/#contact">CONTACT</a></nav><div className="actions"><a className="iconLink" href="/shop"><Search/></a><button className="bag" onClick={onCart}><ShoppingBag/><b>{cartCount}</b></button></div></header>
+ return <header><a className="logo" href="/">KARIA</a><nav><a href="/shop">SHOP</a><a href="/shop#categories">CATEGORIES</a><a href="/#new">NEW</a><a href="/#contact">CONTACT</a></nav><div className="actions"><a className="iconLink" href="/shop"><Search/></a><button className="bag" onClick={onCart}><ShoppingBag/><b>{cartCount}</b></button></div></header>
 }
 function CartDrawer({open,setOpen,cart,setCart,checkout}){
  if(!open)return null;return <div className="accountBackdrop" onMouseDown={()=>setOpen(false)}><section className="accountPanel" onMouseDown={e=>e.stopPropagation()}><button className="accountClose" onClick={()=>setOpen(false)}><X/></button><div className="accountBrand">KARIA</div><small className="accountEyebrow">YOUR BAG</small><h2>{cart.length?`${cart.length} piece${cart.length>1?'s':''}`:'Your bag is empty'}</h2><div className="cartList">{cart.map((p,i)=><div className="cartRow" key={`${p.id}-${i}`}><img src={p.img}/><div><b>{p.name}</b><small>${Number(p.price).toFixed(2)}</small></div><button onClick={()=>setCart(c=>c.filter((_,x)=>x!==i))}>×</button></div>)}</div>{cart.length>0&&<><div className="cartTotal"><span>Total</span><b>${cart.reduce((s,p)=>s+Number(p.price),0).toFixed(2)}</b></div><button type="button" className="accountPrimary secureCheckoutBtn" onClick={(e)=>{e.preventDefault();e.stopPropagation();checkout()}}>SECURE CHECKOUT <ArrowRight/></button></>}</section></div>
@@ -83,7 +83,7 @@ function App(){
  if(path.startsWith("/product/")) return <ProductPage products={storeProducts} id={decodeURIComponent(path.split("/").pop())} add={add} cart={cart} setCart={setCart} cartOpen={cartOpen} setCartOpen={setCartOpen} checkout={checkout}/>;
  return <div className="site">
   <header className={menu?"menuHeaderOpen":""}><button className="icon mobile" onClick={()=>setMenu(!menu)}>{menu?<X/>:<Menu/>}</button><a className="logo" href="#top">KARIA</a>
-   <nav className={menu?"open":""}><a href="/shop" onClick={()=>setMenu(false)}>SHOP</a><a href="#categories" onClick={()=>setMenu(false)}>CATEGORIES</a><a href="#new" onClick={()=>setMenu(false)}>NEW</a><a href="#contact" onClick={()=>setMenu(false)}>CONTACT</a></nav>
+   <nav className={menu?"open":""}><a href="/shop" onClick={()=>setMenu(false)}>SHOP</a><a href="/shop#categories" onClick={()=>setMenu(false)}>CATEGORIES</a><a href="#new" onClick={()=>setMenu(false)}>NEW</a><a href="#contact" onClick={()=>setMenu(false)}>CONTACT</a></nav>
    <div className="actions"><Search/><button className="accountIcon" aria-label="Account" onClick={()=>setAccountOpen(true)}><User/></button><button className="bag" onClick={()=>setCartOpen(true)}><ShoppingBag/><b>{cart.length}</b></button></div>
   </header>
   {menu&&<div className="mobileMenuBackdrop" onClick={()=>setMenu(false)} aria-hidden="true"/>}
