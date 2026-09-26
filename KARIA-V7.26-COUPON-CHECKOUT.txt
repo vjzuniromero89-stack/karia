@@ -1,0 +1,7 @@
+KARIA V7.26 — COUPON CHECKOUT
+- Checkout now has APPLY COUPON.
+- Validates active coupon, start/end dates.
+- Shows coupon and discount in order summary before payment.
+- create-checkout validates coupon server-side, saves coupon_code and discount_total on orders, and sends the discounted total to Stripe.
+- Stripe fee remains based on the actual amount charged and is captured by stripe-webhook / charge.updated.
+IMPORTANT: Deploy supabase/functions/create-checkout/index.ts to the existing create-checkout Edge Function after deploying the ZIP. Existing Stripe/Supabase secrets are reused.
