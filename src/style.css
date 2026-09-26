@@ -419,3 +419,82 @@ button,input,select,textarea{max-width:100%}
 
 /* V7.26 — checkout coupon application */
 .checkoutCoupon{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}.checkoutCoupon label{min-width:0}.checkoutCoupon button{height:45px;border:1px solid #171512;background:#171512;color:#fff;padding:0 18px;font-size:9px;letter-spacing:.12em;white-space:nowrap;cursor:pointer}.checkoutCoupon button:disabled{opacity:.55}.checkoutCouponSuccess{margin:0;background:#edf6ef;color:#2f6b3d;border:1px solid #cfe2d3;padding:12px;font-size:12px;line-height:1.5}.couponDiscount{color:#2f6b3d}.couponDiscount span b{letter-spacing:.08em}@media(max-width:560px){.checkoutCoupon{grid-template-columns:1fr}.checkoutCoupon button{width:100%}}
+
+/* =========================================================
+   KARIA V7.27 — ADMIN TYPOGRAPHY REFRESH
+   Clean, highly legible administration typography.
+   Storefront branding remains unchanged.
+   ========================================================= */
+.admin,
+.adminMain,
+.adminMain button,
+.adminMain input,
+.adminMain select,
+.adminMain textarea,
+.admin aside button,
+.admin .owners,
+.admin .panel,
+.admin .cards,
+.admin table {
+  font-family:"DM Sans",Arial,sans-serif!important;
+}
+
+/* Keep the KARIA wordmark as a brand element only. */
+.admin aside .logo{font-family:Italiana,serif!important}
+
+/* Page and section headings: modern, solid and easy to scan. */
+.adminTop h1,
+.adminMain h1,
+.adminMain h2,
+.adminMain h3,
+.adminForm h2,
+.admin .panel h2,
+.inventoryHero h2,
+.inventorySectionTitle h3,
+.accountingHero h2,
+.accountingTitle h2 {
+  font-family:"DM Sans",Arial,sans-serif!important;
+  font-weight:600!important;
+  letter-spacing:-.035em!important;
+  line-height:1.08!important;
+}
+.adminTop h1,.adminMain>h1{font-size:44px!important}
+.adminForm h2,.admin .panel h2,.inventorySectionTitle h3,.accountingTitle h2{font-size:25px!important}
+.inventoryHero h2,.accountingHero h2{font-size:36px!important}
+
+/* Financial values and KPI numbers: clear, aligned digits. */
+.admin .cards strong,
+.inventoryHero strong,
+.inventoryKpis strong,
+.accountingProfit strong,
+.adminMain td,
+.adminMain .money,
+.adminMain .amount,
+.adminMain [class*="total"],
+.adminMain [class*="Total"],
+.adminMain [class*="profit"],
+.adminMain [class*="Profit"] {
+  font-family:"DM Sans",Arial,sans-serif!important;
+  font-variant-numeric:tabular-nums lining-nums!important;
+}
+.admin .cards strong,
+.inventoryKpis strong,
+.accountingProfit strong,
+.inventoryHero strong{
+  font-weight:600!important;
+  letter-spacing:-.025em!important;
+}
+.admin .cards strong{font-size:30px!important}
+.inventoryKpis strong{font-size:27px!important}
+.accountingProfit strong,.inventoryHero strong{font-size:36px!important}
+
+/* Labels and tables use stronger contrast and predictable spacing. */
+.adminMain table{font-variant-numeric:tabular-nums lining-nums}
+.adminMain th{font-family:"DM Sans",Arial,sans-serif!important;font-weight:600!important}
+.adminMain td{font-weight:400}
+.adminMain small,.adminMain label{font-family:"DM Sans",Arial,sans-serif}
+
+@media(max-width:850px){
+  .adminTop h1,.adminMain>h1{font-size:36px!important}
+  .inventoryHero h2,.accountingHero h2{font-size:30px!important}
+}

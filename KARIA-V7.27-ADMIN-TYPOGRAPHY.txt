@@ -1,0 +1,7 @@
+
+KARIA V7.27 — ADMIN TYPOGRAPHY
+- Replaced decorative serif typography throughout Administration with clean DM Sans.
+- Improved heading weights and hierarchy.
+- Financial values now use tabular lining numerals for clearer money/count reading.
+- Storefront typography and KARIA branding remain unchanged.
+- No business logic, Stripe, coupons, accounting, inventory, or order behavior changed.
