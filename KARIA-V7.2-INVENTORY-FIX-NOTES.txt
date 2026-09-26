@@ -1,0 +1,12 @@
+KARIA V7.2 Inventory enum fix
+No SQL migration is required.
+
+The database inventory_kind enum accepts:
+IN, OUT, RESERVE, RELEASE, RETURN, ADJUST, PRODUCTION_IN, MATERIAL_OUT.
+
+The UI's OPENING STOCK is now stored as:
+movement_type = ADJUST
+note = OPENING STOCK ...
+
+This preserves the existing database schema while allowing the Inventory dashboard
+to classify that movement as Opening Stock.
