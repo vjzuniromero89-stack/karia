@@ -1,0 +1,10 @@
+KARIA V7.16.5 — PRODUCT ADMIN DISPLAY
+- Product list now shows the uploaded product photo.
+- Removed internal ID from visible product table.
+- Removed Category ID from visible product table.
+- Removed Brand ID from visible product table.
+- Shows category NAME instead.
+- Null/empty product fields render blank, never the word "null".
+- Clean columns: Photo, Product, Category, SKU, Description, Price, Cost, Status, Actions.
+- Existing product creation, category selector, delete RPC, Shop, NEW, Phone Universe, inventory, accounting and checkout retained.
+- No SQL migration required for this visual/admin-table update.
