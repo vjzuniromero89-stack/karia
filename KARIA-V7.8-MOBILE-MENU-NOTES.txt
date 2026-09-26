@@ -1,0 +1,11 @@
+KARIA V7.8
+- Mobile hamburger menu now opens as a dedicated full-screen panel.
+- Homepage content is completely covered while the menu is open.
+- Menu items no longer float over the hero text/image.
+- SHOP / THE CRAFT / BRANDS / CONTACT are stacked with clear separators.
+- X closes the menu.
+- Selecting any menu item closes the menu.
+- Page scrolling is locked while menu is open.
+- Checkout mobile fixes from V7.7.2 retained.
+- Admin, Orders, Inventory and Super Admin password reset retained.
+No SQL migration required.
