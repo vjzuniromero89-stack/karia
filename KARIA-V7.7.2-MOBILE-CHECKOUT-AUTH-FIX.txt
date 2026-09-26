@@ -1,0 +1,12 @@
+KARIA V7.7.2
+ROOT CAUSE FIX:
+The checkout handler required `user` before navigating. On mobile, if the Supabase session was absent/expired, pressing SECURE CHECKOUT closed the cart and opened the account state instead of navigating, which looked like the button did nothing.
+
+Changes:
+- SECURE CHECKOUT always navigates to /checkout when the cart has items.
+- Cart is saved before navigation.
+- /checkout renders even when the customer is not signed in.
+- Checkout clearly tells an unauthenticated customer to sign in before submitting.
+- The order cannot be submitted without authentication.
+- Existing desktop/admin/order/inventory/password features retained.
+No SQL migration required.

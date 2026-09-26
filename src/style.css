@@ -217,3 +217,5 @@ button,input,select,textarea{max-width:100%}
   .cartDrawer,.cartDrawer section,.cartPanel{pointer-events:auto!important}
   .secureCheckoutBtn{width:100%!important;min-height:56px!important}
 }
+
+.checkoutAuthNotice{grid-column:1/-1;padding:12px 14px;border:1px solid #d8cbb9;background:#f6efe5;border-radius:10px;font-size:12px;line-height:1.5}
