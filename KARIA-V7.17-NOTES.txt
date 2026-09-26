@@ -1,0 +1,13 @@
+KARIA V7.17 — PRODUCT + INVENTORY EDIT
+Products:
+- Added EDIT next to DELETE.
+- Edit name, SKU, category, description, sale price and unit cost.
+- Existing delete/archive behavior retained.
+
+Inventory:
+- Added EDIT next to DELETE for movement history.
+- Edit quantity, movement type and reason/reference.
+- Opening Stock keeps its OPENING STOCK marker so inventory accounting remains correct.
+- Existing delete behavior retained.
+
+No SQL migration required because existing Admin RLS policies already permit UPDATE.
