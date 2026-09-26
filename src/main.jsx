@@ -89,14 +89,51 @@ function App(){
   {menu&&<div className="mobileMenuBackdrop" onClick={()=>setMenu(false)} aria-hidden="true"/>}
   {cartOpen&&<div className="accountBackdrop" onMouseDown={()=>setCartOpen(false)}><section className="accountPanel" onMouseDown={e=>e.stopPropagation()}><button className="accountClose" onClick={()=>setCartOpen(false)}><X/></button><div className="accountBrand">KARIA</div><small className="accountEyebrow">YOUR BAG</small><h2>{cart.length?`${cart.length} piece${cart.length>1?"s":""}`:"Your bag is empty"}</h2><div className="cartList">{cart.map((p,i)=><div className="cartRow" key={`${p.id}-${i}`}><img src={p.img}/><div><b>{p.name}</b><small>${Number(p.price).toFixed(2)}</small></div><button onClick={()=>setCart(c=>c.filter((_,x)=>x!==i))}>×</button></div>)}</div>{cart.length>0&&<><div className="cartTotal"><span>Total</span><b>${cart.reduce((s,p)=>s+Number(p.price),0).toFixed(2)}</b></div><button type="button" className="accountPrimary secureCheckoutBtn" onClick={(e)=>{e.preventDefault();e.stopPropagation();checkout()}}>SECURE CHECKOUT <ArrowRight/></button></>}</section></div>}{accountOpen&&<div className="accountBackdrop" onMouseDown={()=>setAccountOpen(false)}><section className="accountPanel" onMouseDown={e=>e.stopPropagation()}><button className="accountClose" onClick={()=>setAccountOpen(false)}><X/></button><div className="accountBrand">KARIA</div>{user?<><small className="accountEyebrow">MY ACCOUNT</small><h2>{profile?.full_name||user.email?.split("@")[0]}</h2><p className="accountEmail">{user.email}</p><div className="accountRole">{profile?.role?.replace("_"," ")||"customer"}</div><button className="accountSecondary passwordAction" onClick={()=>{setAccountOpen(false);setPasswordNotice("");setPasswordOpen(true)}}>CHANGE PASSWORD</button>{canAdmin&&<button className="accountPrimary" onClick={()=>{setAccountOpen(false);setAdmin(true)}}>OPEN ADMINISTRATION <ArrowRight/></button>}<button className="accountSecondary" onClick={signOut}>SIGN OUT</button></>:<><small className="accountEyebrow">WELCOME TO KARIA</small><h2>{authMode==="signin"?"Sign in":"Create account"}</h2><p className="accountIntro">Access your orders, saved details and KARIA account.</p><form onSubmit={submitAuth}>{authMode==="signup"&&<input name="name" placeholder="Full name" required/>}<input name="email" type="email" placeholder="Email address" required/><input name="password" type="password" placeholder="Password" minLength="6" required/>{authError&&<p className="authError">{authError}</p>}<button className="accountPrimary" type="submit">{authMode==="signin"?"SIGN IN":"CREATE ACCOUNT"}<ArrowRight/></button></form><button className="accountSwitch" onClick={()=>{setAuthError("");setAuthMode(authMode==="signin"?"signup":"signin")}}>{authMode==="signin"?"New to KARIA? Create an account":"Already have an account? Sign in"}</button></>}</section></div>}{passwordOpen&&<div className="accountBackdrop" onMouseDown={()=>{if(!mustChangePassword)setPasswordOpen(false)}}><section className="accountPanel securityPanel" onMouseDown={e=>e.stopPropagation()}>{!mustChangePassword&&<button className="accountClose" onClick={()=>setPasswordOpen(false)}><X/></button>}<div className="accountBrand">KARIA</div><small className="accountEyebrow">ACCOUNT SECURITY</small><h2>{mustChangePassword?"Create your new password":"Change password"}</h2><p className="accountIntro">{mustChangePassword?"Your account was created with a temporary password. Choose your private password before continuing.":"Choose a new password for your KARIA account."}</p><form onSubmit={changePassword}><input name="new_password" type="password" placeholder="New password" minLength="8" autoComplete="new-password" required/><input name="confirm_password" type="password" placeholder="Confirm new password" minLength="8" autoComplete="new-password" required/>{passwordNotice&&<p className={passwordNotice.startsWith("Password updated")?"authSuccess":"authError"}>{passwordNotice}</p>}<button className="accountPrimary" type="submit">UPDATE PASSWORD <ArrowRight/></button></form>{mustChangePassword&&<button className="accountSecondary" onClick={signOut}>SIGN OUT</button>}</section></div>}
   <main id="top">
-   <section className="heroCine universeHero">
+   <section className="phonePortalHero">
+    <div className="phoneHeroCopy">
+     <div className="eyebrow">KARIA · ONE STORE · MANY WORLDS</div>
+     <h1><span>Everything you love.</span><em>In one place.</em></h1>
+     <p>Discover products that move around your world — fashion, beauty, home, lifestyle and more.</p>
+     <a href="/shop" className="cta">SHOP KARIA <ArrowRight/></a>
+    </div>
+    <div className="phoneStage" aria-label="KARIA product universe">
+     <div className="phoneGlow"></div>
+     <div className="phoneDevice">
+      <div className="phoneNotch"></div>
+      <div className="phoneScreen">
+       <div className="phoneScreenTop"><b>KARIA</b><span>SHOP</span></div>
+       <div className="phoneScreenHero"><small>THE KARIA EDIT</small><strong>Find your<br/><i>world.</i></strong></div>
+       <div className="phoneScreenGrid">
+        {(storeProducts.length?storeProducts:products).slice(0,4).map((p,i)=><div key={p.id||i}><img src={p.img}/></div>)}
+       </div>
+       <div className="phoneScreenNav"><span>HOME</span><span>DISCOVER</span><span>BAG</span></div>
+      </div>
+     </div>
+     <div className="productOrbit orbitOne">
+      <div className="orbitCard"><img src={(storeProducts[0]||products[0]).img}/><span>{(storeProducts[0]||products[0]).name}</span></div>
+     </div>
+     <div className="productOrbit orbitTwo">
+      <div className="orbitCard orbitCardWide"><img src={(storeProducts[1]||products[1]).img}/><span>STYLE</span></div>
+     </div>
+     <div className="productOrbit orbitThree">
+      <div className="orbitCard orbitCardSmall"><img src={(storeProducts[2]||products[2]).img}/><span>NEW</span></div>
+     </div>
+     <div className="productOrbit orbitFour">
+      <div className="orbitMini"><ShoppingBag/></div>
+     </div>
+     <div className="phoneOrbitLine lineOne"></div><div className="phoneOrbitLine lineTwo"></div>
+    </div>
+    <div className="phoneScrollCue"><MoveDown/><span>ENTER THE UNIVERSE</span></div>
+   </section>
+
+   <section className="heroCine universeHero universeSecond">
     <div className="heroWords universeWords"><div className="eyebrow">THE KARIA UNIVERSE · 2026</div><h1><span>Find what fits</span><em>your world.</em></h1><p>One destination. Many worlds. Discover fashion, beauty, home, lifestyle, accessories and whatever comes next.</p><a href="/shop" className="cta">Enter KARIA <ArrowRight/></a></div>
     <div className="canvasWrap universeCanvas"><Canvas camera={{position:[0,0,7.2],fov:36}} dpr={[1,1.6]} gl={{alpha:true,antialias:true}}><HeroScene progress={progress} items={storeProducts}/></Canvas></div>
     <div className="universeHalo h1"></div><div className="universeHalo h2"></div><div className="heroVertical">KARIA · ONE STORE · MANY WORLDS</div><div className="scrollOrb"><MoveDown/><span>EXPLORE</span></div>
    </section>
 
    <section className="categoryWorlds" id="categories">
-    <div className="categoryWorldsHead"><div><small>01 — EXPLORE YOUR WORLD</small><h2>Different worlds.<br/><i>One KARIA.</i></h2></div><p>Explore KARIA by category. Each world is designed like a small cinematic campaign — products floating in space, depth, light and motion.</p></div>
+    <div className="categoryWorldsHead"><div><small>02 — EXPLORE YOUR WORLD</small><h2>Different worlds.<br/><i>One KARIA.</i></h2></div><p>Explore KARIA by category. Each world is designed like a small cinematic campaign — products floating in space, depth, light and motion.</p></div>
     <div className="worldCompositions">
      {[
       {name:"STYLE",sub:"Fashion · Bags · Accessories",cls:"styleWorld",a:0,b:1,c:2},
@@ -118,7 +155,7 @@ function App(){
    </section>
 
    <section className="newKaria" id="new">
-    <div className="newKariaHead"><div><small>02 — NEW AT KARIA</small><h2>Fresh discoveries.</h2></div><a href="/shop">SHOP ALL <ArrowRight/></a></div>
+    <div className="newKariaHead"><div><small>03 — NEW AT KARIA</small><h2>Fresh discoveries.</h2></div><a href="/shop">SHOP ALL <ArrowRight/></a></div>
     <div className="newProductRail">
      {storeProducts.slice(0,4).map((p,i)=><a className="newProductCard" href={`/product/${p.id}`} key={p.id||i}><div className="newProductImage"><img src={p.img}/><span>0{i+1}</span></div><div><small>{p.brand||"KARIA"}</small><h3>{p.name}</h3><b>${Number(p.price||0).toFixed(2)}</b></div></a>)}
      {!storeProducts.length&&<>
@@ -129,7 +166,7 @@ function App(){
     <div className="newKariaClosing"><span>ONE STORE</span><b>KARIA</b><span>MANY WORLDS</span></div>
    </section>
   </main>
-  <footer id="contact"><div><div className="logo">KARIA</div><p>Fashion, beauty, home, lifestyle & more.<br/>Curated by KARIA.</p></div><div className="footLinks"><a href="/shop">Shop</a><a href="#discover">Discover</a><a href="#brands">Brands</a><a href="#">Shipping & returns</a></div><div className="newsletter"><small>JOIN THE KARIA LETTER</small><div><input placeholder="Your email address"/><button>→</button></div></div>{canAdmin&&<button className="adminLink" onClick={()=>setAdmin(true)}>Admin</button>}<div className="copyright">© 2026 KARIA · ONE STORE · MANY WORLDS</div></footer>
+  <footer id="contact"><div><div className="logo">KARIA</div><p>Fashion, beauty, home, lifestyle & more.<br/>Curated by KARIA.</p></div><div className="footLinks"><a href="/shop">Shop</a><a href="#categories">Categories</a><a href="#new">New</a><a href="#">Shipping & returns</a></div><div className="newsletter"><small>JOIN THE KARIA LETTER</small><div><input placeholder="Your email address"/><button>→</button></div></div>{canAdmin&&<button className="adminLink" onClick={()=>setAdmin(true)}>Admin</button>}<div className="copyright">© 2026 KARIA · ONE STORE · MANY WORLDS</div></footer>
  </div>
 }
 

@@ -1,0 +1,16 @@
+KARIA V7.13 — PHONE UNIVERSE
+New entry frontpage scene:
+- Static premium KARIA phone in center.
+- Product cards move/rotate around phone while phone stays fixed.
+- Cards pass in front/behind using depth/z-index.
+- Uses real Supabase product images when available.
+- Responsive desktop/mobile.
+- Reduced-motion accessibility fallback.
+Page flow organized as:
+1. Phone Universe entry
+2. Existing KARIA Universe
+3. Explore Your World
+4. New at KARIA
+5. Footer
+All Admin/Accounting/Inventory/Orders/Checkout/Auth functionality retained.
+No SQL required.
