@@ -209,8 +209,16 @@ function App(){
     </div>
    </section>
 
+   <section className="productionFilm" id="production-film">
+    <div className="productionFilmHead"><div><small>03 — BEHIND KARIA</small><h2>The making of<br/><i>something special.</i></h2></div><p>A closer look at the details, hands and process behind the products we bring into the KARIA world.</p></div>
+    <div className="productionFilmFrame">
+     <video src="/products/bag-video.mp4" autoPlay muted loop playsInline preload="metadata" aria-label="KARIA production video"/>
+     <span className="productionFilmBadge">KARIA · PRODUCTION FILM</span>
+    </div>
+   </section>
+
    <section className="newKaria" id="new">
-    <div className="newKariaHead"><div><small>03 — NEW AT KARIA</small><h2>Fresh discoveries.</h2></div><a href="/shop">SHOP ALL <ArrowRight/></a></div>
+    <div className="newKariaHead"><div><small>04 — NEW AT KARIA</small><h2>Fresh discoveries.</h2></div><a href="/shop">SHOP ALL <ArrowRight/></a></div>
     <div className="newProductRail">
      {storeProducts.slice(0,4).map((p,i)=><a className="newProductCard" href={`/product/${p.id}`} key={p.id||i}><div className="newProductImage"><img src={p.img}/><span>0{i+1}</span></div><div><small>{p.brand||"KARIA"}</small><h3>{p.name}</h3><b>${Number(p.price||0).toFixed(2)}</b></div></a>)}
      {!storeProducts.length&&<>
