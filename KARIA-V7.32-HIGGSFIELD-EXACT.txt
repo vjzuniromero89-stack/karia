@@ -1,0 +1,8 @@
+KARIA V7.32 — HIGGSFIELD EXACT
+
+Homepage opening rebuilt from the approved Higgsfield video itself.
+- Full-screen sticky cinematic.
+- Scrolling scrubs through the exact 15-second approved film frame-by-frame.
+- Removed the overlapping phone/text/orbit recreation that did not match the reference.
+- Existing Shop, New, product, cart, checkout, admin, orders, inventory, accounting and Supabase logic left intact.
+- After the cinematic finishes, the existing KARIA category/new-product homepage content continues.
