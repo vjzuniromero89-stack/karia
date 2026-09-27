@@ -498,3 +498,52 @@ button,input,select,textarea{max-width:100%}
   .adminTop h1,.adminMain>h1{font-size:36px!important}
   .inventoryHero h2,.accountingHero h2{font-size:30px!important}
 }
+
+/* KARIA V7.29 — Orders: clean compact alignment */
+.orderAdminGrid{gap:10px!important}
+.orderAdminCard{grid-template-columns:64px minmax(0,1fr)!important;min-height:92px!important;overflow:hidden!important}
+.orderCardPhoto,.orderCardPhoto img{width:64px!important;height:92px!important;min-height:92px!important;object-fit:cover!important}
+.orderCardBody{
+  padding:12px 14px!important;
+  display:grid!important;
+  grid-template-columns:82px 92px minmax(150px,1fr) minmax(210px,1.25fr) 100px 100px 115px 170px!important;
+  align-items:center!important;
+  column-gap:16px!important;
+  row-gap:6px!important;
+  min-width:0!important;
+}
+.orderCardTop{display:contents!important}
+.orderCardTop>div{min-width:0!important}
+.orderCardTop h3{font-size:18px!important;line-height:1.15!important;margin:3px 0 0!important}
+.orderCardTop small,.orderCardBottom small{display:block!important;font-size:7px!important;line-height:1.2!important;letter-spacing:1.15px!important;white-space:nowrap!important}
+.orderStatus{justify-self:start!important;font-size:9px!important;padding:6px 10px!important;white-space:nowrap!important}
+.orderProductName{font-size:13px!important;line-height:1.25!important;margin:0!important;min-width:0!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.orderMeta{margin:0!important;display:grid!important;gap:4px!important;font-size:10px!important;line-height:1.25!important;min-width:0!important;color:#716960!important}
+.orderMeta span{display:block!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;min-width:0!important}
+.orderCardBottom{display:contents!important;border:0!important;padding:0!important}
+.orderCardBottom>div{min-width:0!important}
+.orderCardBottom strong{display:block!important;font-size:14px!important;line-height:1.2!important;margin-top:4px!important;white-space:nowrap!important}
+.orderCardBottom .rowActionButtons{display:flex!important;justify-content:flex-end!important;gap:8px!important;min-width:160px!important}
+.orderCardBottom button{padding:7px 10px!important;font-size:8px!important;white-space:nowrap!important}
+@media(max-width:1250px){
+ .orderCardBody{grid-template-columns:76px 86px minmax(130px,1fr) minmax(180px,1.2fr) 92px 96px 150px!important}
+ .orderCardBottom>div:nth-child(3){display:none!important}
+}
+@media(max-width:900px){
+ .orderAdminCard{grid-template-columns:58px minmax(0,1fr)!important}
+ .orderCardPhoto,.orderCardPhoto img{width:58px!important;height:104px!important;min-height:104px!important}
+ .orderCardBody{grid-template-columns:70px 82px minmax(120px,1fr) 90px 145px!important;grid-template-rows:auto auto!important;padding:10px!important;gap:8px 10px!important}
+ .orderMeta{grid-column:1/4!important;grid-row:2!important;display:flex!important;gap:12px!important}
+ .orderCardBottom>div:nth-child(2),.orderCardBottom>div:nth-child(3){display:none!important}
+ .orderCardBottom .rowActionButtons{min-width:140px!important}
+}
+@media(max-width:700px){
+ .orderAdminCard{grid-template-columns:54px minmax(0,1fr)!important}
+ .orderCardPhoto,.orderCardPhoto img{width:54px!important;height:116px!important;min-height:116px!important}
+ .orderCardBody{display:grid!important;grid-template-columns:64px 78px minmax(90px,1fr)!important;grid-template-rows:auto auto auto!important;gap:7px!important}
+ .orderProductName{grid-column:3!important;grid-row:1!important}
+ .orderMeta{display:grid!important;grid-column:1/4!important;grid-row:2!important;gap:2px!important;font-size:9px!important}
+ .orderCardBottom>div:first-child{grid-column:1/2!important;grid-row:3!important}
+ .orderCardBottom .rowActionButtons{grid-column:2/4!important;grid-row:3!important;justify-content:flex-end!important;min-width:0!important}
+ .orderCardBottom>div:nth-child(2),.orderCardBottom>div:nth-child(3){display:none!important}
+}

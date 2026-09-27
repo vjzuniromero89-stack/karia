@@ -1,0 +1,4 @@
+KARIA V7.29
+- Reorganized Admin > Orders into fixed responsive columns.
+- Prevents date, email, Customer Paid, Stripe Fee and action buttons from overlapping.
+- Preserves checkout, coupons, Stripe, accounting and all existing functionality.
