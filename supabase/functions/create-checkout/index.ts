@@ -25,7 +25,41 @@ Deno.serve(async(req)=>{
   const {data:products,error:pe}=await admin.from("products").select("id,name,price,unit_cost,active").in("id",ids).eq("active",true);
   if(pe)throw pe;
   const map=new Map((products||[]).map((p:any)=>[p.id,p]));
-  const lines=items.map((x:any)=>{const p:any=map.get(x.product_id);if(!p)throw new Error("Unavailable product");const quantity=Math.max(1,Number(x.quantity||x.qty||1));return {product_id:p.id,name:p.name,quantity,unit_price:money(p.price),unit_cost:money(p.unit_cost||0)}});
+  // KARIA V7.33 — custom bags: price and colors are re-validated on the server
+  const hasCustom=items.some((x:any)=>x&&x.customization);
+  let cfg:any=null, styleMap=new Map<string,any>(), colorMap=new Map<string,any>();
+  if(hasCustom){
+   const [{data:c,error:ce},{data:st,error:se},{data:co,error:coe}]=await Promise.all([
+    admin.from("customize_config").select("*").eq("id",1).maybeSingle(),
+    admin.from("customize_styles").select("*"),
+    admin.from("customize_colors").select("*"),
+   ]);
+   if(ce||se||coe)throw new Error("Customize is not configured. Run KARIA-V7.33-CUSTOMIZE.sql");
+   cfg=c||{enabled:true,customization_fee:0};
+   if(cfg.enabled===false)throw new Error("Custom bags are temporarily unavailable");
+   styleMap=new Map((st||[]).map((r:any)=>[r.id,r]));colorMap=new Map((co||[]).map((r:any)=>[r.id,r]));
+  }
+  const cleanText=(v:unknown,n=60)=>String(v??"").replace(/[<>]/g,"").slice(0,n);
+  const buildCustom=(raw:any)=>{
+   const style=styleMap.get(String(raw?.style_id||""));
+   if(!style||style.active===false)throw new Error("This bag style is no longer available");
+   const allowed:string[]|null=Array.isArray(style.allowed_colors)&&style.allowed_colors.length?style.allowed_colors:null;
+   const parts:Record<string,any>={};
+   for(const [key,val] of Object.entries(raw?.parts||{}).slice(0,12)){
+    const col=colorMap.get(String((val as any)?.color_id||""));
+    if(!col||col.active===false)throw new Error(`Color for ${cleanText((val as any)?.label||key)} is sold out — please choose another`);
+    if(allowed&&!allowed.includes(col.id))throw new Error(`${col.name} is not available for ${style.name}`);
+    parts[cleanText(key,30)]={label:cleanText((val as any)?.label||key),color_id:col.id,color_name:col.name,hex:col.hex};
+   }
+   if(!parts.body||!parts.handle)throw new Error("Custom bag is missing body or handle color");
+   const hw=["gold","silver","black"].includes(raw?.hardware)?raw.hardware:"gold";
+   const out:any={style_id:style.id,style_name:style.name,kind:style.kind,parts,hardware:hw,hardware_name:{gold:"Gold",silver:"Silver",black:"Matte Black"}[hw as "gold"]};
+   if(Array.isArray(style.bands)&&style.bands.length)out.bands=style.bands;
+   return {customization:out,extra:money(Number(cfg.customization_fee||0)+Number(style.extra_price||0)),style};
+  };
+  const lines=items.map((x:any)=>{const p:any=map.get(x.product_id);if(!p)throw new Error("Unavailable product");const quantity=Math.max(1,Number(x.quantity||x.qty||1));
+   if(x.customization){const c=buildCustom(x.customization);return {product_id:p.id,name:`Custom Bag · ${c.style.name}`,quantity,unit_price:money(Number(p.price)+c.extra),unit_cost:money(p.unit_cost||0),customization:c.customization}}
+   return {product_id:p.id,name:p.name,quantity,unit_price:money(p.price),unit_cost:money(p.unit_cost||0),customization:null}});
   const subtotal=money(lines.reduce((a:number,l:any)=>a+l.quantity*l.unit_price,0));
 
   let coupon:any=null, discount=0, normalizedCode:string|null=null;
@@ -45,7 +79,7 @@ Deno.serve(async(req)=>{
 
   const {data:order,error:oe}=await admin.from("orders").insert({customer_id:user.id,email:user.email||null,status:"pending",subtotal,discount_total:discount,shipping_total:0,total,shipping_address,coupon_code:normalizedCode}).select().single();
   if(oe)throw oe;
-  const {error:le}=await admin.from("order_items").insert(lines.map((l:any)=>({order_id:order.id,product_id:l.product_id,qty:l.quantity,unit_price:l.unit_price,unit_cost:l.unit_cost})));
+  const {error:le}=await admin.from("order_items").insert(lines.map((l:any)=>({order_id:order.id,product_id:l.product_id,qty:l.quantity,unit_price:l.unit_price,unit_cost:l.unit_cost,...(l.customization?{customization:l.customization}:{})})));
   if(le){await admin.from("orders").delete().eq("id",order.id);throw le;}
 
   const stripe=new Stripe(stripeKey,{httpClient:Stripe.createFetchHttpClient()});

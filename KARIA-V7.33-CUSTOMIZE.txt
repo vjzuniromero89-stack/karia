@@ -1,0 +1,29 @@
+KARIA V7.33 — CUSTOMIZE (3D bag configurator)
+
+NEW
+- CUSTOMIZE tab in the store menu (/customize) + "Design your own bag" section on the homepage.
+- 3D bag preview (Three.js): real crochet-stitch texture, drag to rotate, zoom, auto-rotation.
+- Step 1 · Choose your style — the 10 designs: Classic Double, Multi, Vertical, Wide, Asymmetric,
+  Framed, Diagonal, Triple, Border and Block Stripe.
+- When a style is chosen, the bag is "crocheted" row by row in 3D and the handle grows at the end.
+- Step 2 · Choose your colors — only the parts that style uses are shown
+  (e.g. Triple Stripe: Main Body, Bottom, Middle, Top Stripe, Handle). 24 yarn colors.
+- Tap any part of the 3D bag (a stripe, the body, the handle) to select it; the selected part glows.
+- Hardware rings: Gold / Silver / Matte Black. Shuffle ("Surprise me") and Reset buttons.
+- Step 3 · Summary with every part + price, then ADD CUSTOM BAG TO CART (cart shows a snapshot of the 3D bag).
+- Checkout sends the full recipe; the server re-checks style, colors (sold-out / allowed) and price.
+- Orders: custom bags show a drawing of the bag + color of every part + hardware ("how to make it").
+- Admin → Customize: base price, customization fee, production note, show/hide the page,
+  add/edit/sold-out/delete colors, hide styles, extra price per style, limit colors per style,
+  and create NEW stripe styles (horizontal bands) with a live preview.
+
+INSTALL (in this order)
+1. Supabase → SQL Editor → run KARIA-V7.33-CUSTOMIZE.sql
+   (adds order_items.customization, 3 customize tables, seeds 10 styles + 24 colors,
+    creates the hidden product KARIA-CUSTOM-BAG at $118).
+2. Redeploy the edge function:  supabase functions deploy create-checkout
+3. Deploy the frontend (Vercel) as usual.
+
+Price of a custom bag = KARIA-CUSTOM-BAG price + customization fee + style extra price.
+Everything existing (Shop, New, product, cart, coupons, Stripe checkout, orders, inventory,
+accounting, admin users, categories) is unchanged.
