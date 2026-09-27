@@ -547,13 +547,3 @@ button,input,select,textarea{max-width:100%}
  .orderCardBottom .rowActionButtons{grid-column:2/4!important;grid-row:3!important;justify-content:flex-end!important;min-width:0!important}
  .orderCardBottom>div:nth-child(2),.orderCardBottom>div:nth-child(3){display:none!important}
 }
-
-/* V7.32 — exact Higgsfield cinematic: the approved film itself is the scroll scene. */
-.cinematicHome>header{display:none}
-.hfCinematic{height:520vh;position:relative;background:#e7dfd2}
-.hfSticky{position:sticky;top:0;width:100%;height:100svh;overflow:hidden;background:#e7dfd2}
-.hfSticky video{display:block;width:100%;height:100%;object-fit:cover;object-position:center center}
-@media(max-width:700px){
- .hfCinematic{height:430vh}
- .hfSticky video{object-fit:cover;object-position:center center}
-}
