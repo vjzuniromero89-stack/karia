@@ -1,0 +1,22 @@
+KARIA V7.34 - FULL REVIEW PASS
+
+Storefront:
+- One header on every page: mobile menu, search, account and bag (Shop, New, Product, Customize and Checkout had no account button and no mobile menu).
+- Sign in / create account now works from Checkout (button inside the "sign in" notice).
+- Home search icon opens the Shop. Home "worlds" open the Shop filtered by the matching category.
+- Footer: dead "Shipping & returns" link removed, Customize link added, newsletter form saves the email (run KARIA-V7.34-NEWSLETTER.sql).
+- Product photo never uses a video as the main image.
+- Removed the unused "order created / payment pending" screen and the double period on the success page.
+
+Admin:
+- Sidebar grouped: Overview, Sales, Catalog, Finance, System. Reports removed (it repeated the Dashboard cards).
+- Dashboard: latest orders and low-stock products. Inventory card fixed (the query asked for a column that does not exist).
+- Orders: shipping address, phone, coupon and discount now show (the modal read old field names). Status, carrier and tracking can be saved.
+- Number fields accept cents (price 19.99 was rejected by the browser).
+- Coupons: activate / deactivate / delete.
+- Settings: form shows the saved values instead of blank fields.
+- Accounting: period selector works; "Sales & Profit" chart shows real sales per day (it was fixed sample bars).
+- Customers: real table (name, email, phone, paid orders, spent) plus newsletter subscribers. Brands: real table.
+- Admin users: you can no longer disable your own account.
+
+SQL to run: KARIA-V7.34-NEWSLETTER.sql (only needed for the newsletter form).
