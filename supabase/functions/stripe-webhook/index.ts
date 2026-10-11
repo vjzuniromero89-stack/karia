@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
       if (session.payment_status !== "paid") return Response.json({ received: true, paid: false });
 
       const { data: order, error: orderError } = await db.from("orders")
-        .select("id,total,status,processor_fee")
+        .select("id,order_number,total,status,processor_fee")
         .eq("id", orderId).single();
       if (orderError || !order) throw new Error("KARIA order not found");
 
@@ -49,6 +49,24 @@ Deno.serve(async (req) => {
         processor_fee: processorFee,
       }).eq("id", orderId);
       if (updateError) throw updateError;
+
+      // KARIA V7.35 — a paid order takes its pieces out of inventory, once.
+      // Custom bags are made to order and never touch stock.
+      const { count: already } = await db.from("inventory_movements")
+        .select("id", { count: "exact", head: true }).eq("reference_id", orderId);
+      if (!already) {
+        const { data: items, error: itemsError } = await db.from("order_items")
+          .select("product_id,qty,customization").eq("order_id", orderId);
+        if (itemsError) throw itemsError;
+        const moves = (items || []).filter((it: any) => !it.customization && it.product_id).map((it: any) => ({
+          product_id: it.product_id, qty: Number(it.qty || 0), movement_type: "OUT",
+          reference_type: "order", reference_id: orderId, note: `Sale · order #${order.order_number ?? ""}`,
+        }));
+        if (moves.length) {
+          const { error: moveError } = await db.from("inventory_movements").insert(moves);
+          if (moveError) throw moveError;
+        }
+      }
 
       console.log("KARIA PAYMENT RECORDED", { order_id: orderId, processor_fee: processorFee });
     }

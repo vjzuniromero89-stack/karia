@@ -729,3 +729,6 @@ html:has(.customizePage){overflow-y:auto}
 .dashLink{margin-top:12px;padding:0;border:0;background:none;font-size:10px;letter-spacing:.14em;text-decoration:underline;cursor:pointer;color:inherit}
 .miniBars i{position:relative}
 .miniBarsEmpty{padding:40px 0;color:#8a8178;text-align:center}
+/* KARIA V7.35 — sold out + shipping */
+.catalogBuy button:disabled,.productAdd:disabled{opacity:.45;cursor:not-allowed}
+.cartNotice{margin:0 0 12px;padding:10px 12px;border:1px solid #d8cbb9;background:#f6efe5;border-radius:8px;font-size:12px;line-height:1.4}

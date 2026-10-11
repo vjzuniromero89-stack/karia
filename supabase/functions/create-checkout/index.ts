@@ -60,6 +60,15 @@ Deno.serve(async(req)=>{
   const lines=items.map((x:any)=>{const p:any=map.get(x.product_id);if(!p)throw new Error("Unavailable product");const quantity=Math.max(1,Number(x.quantity||x.qty||1));
    if(x.customization){const c=buildCustom(x.customization);return {product_id:p.id,name:`Custom Bag · ${c.style.name}`,quantity,unit_price:money(Number(p.price)+c.extra),unit_cost:money(p.unit_cost||0),customization:c.customization}}
    return {product_id:p.id,name:p.name,quantity,unit_price:money(p.price),unit_cost:money(p.unit_cost||0),customization:null}});
+  // KARIA V7.35 — stock is checked on the server; made-to-order custom bags are exempt
+  const wanted=new Map<string,number>();
+  for(const l of lines)if(!l.customization)wanted.set(l.product_id,(wanted.get(l.product_id)||0)+l.quantity);
+  if(wanted.size){
+   const {data:stockRows,error:se}=await admin.from("product_stock").select("product_id,stock").in("product_id",[...wanted.keys()]);
+   if(se)throw se;
+   const stock=new Map((stockRows||[]).map((r:any)=>[r.product_id,Number(r.stock||0)]));
+   for(const [id,qty] of wanted){const left=stock.get(id)||0,name=(map.get(id) as any)?.name||"This product";if(left<=0)throw new Error(`${name} is sold out`);if(qty>left)throw new Error(`Only ${left} of ${name} available`)}
+  }
   const subtotal=money(lines.reduce((a:number,l:any)=>a+l.quantity*l.unit_price,0));
 
   let coupon:any=null, discount=0, normalizedCode:string|null=null;
@@ -75,9 +84,14 @@ Deno.serve(async(req)=>{
    if(pct>0)discount=money(subtotal*Math.min(pct,100)/100); else if(fixed>0)discount=money(fixed); else throw new Error("Coupon has no discount configured");
    discount=Math.min(subtotal,Math.max(0,discount));coupon=data;
   }
-  const total=money(Math.max(0,subtotal-discount));
+  // KARIA V7.35 — shipping from Settings: flat rate, free once the order reaches the threshold
+  const {data:shipRow}=await admin.from("settings").select("value").eq("key","shipping").maybeSingle();
+  const rule:any=shipRow?.value||{},afterDiscount=money(Math.max(0,subtotal-discount));
+  const freeOver=Number(rule.free_shipping_over||0);
+  const shipping=freeOver>0&&afterDiscount>=freeOver?0:money(Math.max(0,Number(rule.default_rate||0)));
+  const total=money(afterDiscount+shipping);
 
-  const {data:order,error:oe}=await admin.from("orders").insert({customer_id:user.id,email:user.email||null,status:"pending",subtotal,discount_total:discount,shipping_total:0,total,shipping_address,coupon_code:normalizedCode}).select().single();
+  const {data:order,error:oe}=await admin.from("orders").insert({customer_id:user.id,email:user.email||null,status:"pending",subtotal,discount_total:discount,shipping_total:shipping,total,shipping_address,coupon_code:normalizedCode}).select().single();
   if(oe)throw oe;
   const {error:le}=await admin.from("order_items").insert(lines.map((l:any)=>({order_id:order.id,product_id:l.product_id,qty:l.quantity,unit_price:l.unit_price,unit_cost:l.unit_cost,...(l.customization?{customization:l.customization}:{})})));
   if(le){await admin.from("orders").delete().eq("id",order.id);throw le;}
@@ -87,12 +101,12 @@ Deno.serve(async(req)=>{
   const session=await stripe.checkout.sessions.create({
    mode:"payment",
    customer_email:user.email||undefined,
-   line_items:[{price_data:{currency:"usd",product_data:{name:coupon?`KARIA order #${order.order_number||''} · ${coupon.code}`:`KARIA order #${order.order_number||''}`},unit_amount:Math.round(total*100)},quantity:1}],
+   line_items:[{price_data:{currency:"usd",product_data:{name:coupon?`KARIA order #${order.order_number||''} · ${coupon.code}`:`KARIA order #${order.order_number||''}`},unit_amount:Math.round(afterDiscount*100)},quantity:1},...(shipping>0?[{price_data:{currency:"usd",product_data:{name:"Shipping"},unit_amount:Math.round(shipping*100)},quantity:1}]:[])],
    metadata:{order_id:order.id,order_number:String(order.order_number||""),coupon_code:normalizedCode||"",discount_total:discount.toFixed(2)},
    success_url:`${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
    cancel_url:`${origin}/checkout?canceled=1`,
   });
   await admin.from("orders").update({stripe_session_id:session.id}).eq("id",order.id);
-  return json({ok:true,order_id:order.id,order_number:order.order_number,subtotal,discount_total:discount,coupon_code:normalizedCode,total,checkout_url:session.url});
+  return json({ok:true,order_id:order.id,order_number:order.order_number,subtotal,discount_total:discount,shipping_total:shipping,coupon_code:normalizedCode,total,checkout_url:session.url});
  }catch(e){console.error("CREATE CHECKOUT ERROR",e);return json({ok:false,error:e instanceof Error?e.message:String(e)},400)}
 });

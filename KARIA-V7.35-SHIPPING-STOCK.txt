@@ -1,0 +1,19 @@
+KARIA V7.35 - SHIPPING + SOLD OUT
+
+Shipping:
+- Checkout charges the default shipping rate saved in Admin > Settings.
+- Free when the order (after coupon) reaches "Free shipping over". 0 = never free.
+- The amount is calculated on the server (create-checkout) and sent to Stripe as its own "Shipping" line.
+- The "Tax - calculated next" line was removed: KARIA does not charge tax in checkout.
+
+Stock:
+- Products with 0 stock show SOLD OUT and cannot be added to the bag.
+- The bag never holds more pieces than the stock available.
+- create-checkout rejects the order if stock ran out meanwhile.
+- stripe-webhook records an OUT inventory movement for every paid order (once per order).
+- Custom bags are made to order and are not limited by stock.
+
+To activate (in this order):
+1. Supabase > Edge Functions: redeploy create-checkout and stripe-webhook with the code in supabase/functions.
+2. Admin > Settings: save the shipping rate and free-shipping amount.
+3. Supabase > SQL Editor: run KARIA-V7.35-SHIPPING.sql.
