@@ -742,6 +742,19 @@ html:has(.customizePage){overflow-y:auto}
 .customizeTeaserArt .bagPhoto:nth-child(2),.customizeTeaserArt .bagPhoto:nth-child(4){transform:translateY(28px)}
 .customizeTeaserArt:hover .bagPhoto{transform:translateY(-6px)}
 
+/* KARIA V7.46 — sale price, stars on every card, description in three parts */
+.saleBadge{background:#8a2f24}
+.priceSale{display:inline-flex;align-items:baseline;gap:9px}
+.priceSale s,.productPrice s{color:#9a8d7e;font-weight:400;font-size:.82em}
+.productPrice s{margin-right:12px}
+.productPrice em{margin-left:14px;font-style:normal;font-size:10px;letter-spacing:2px;background:#8a2f24;color:#fff;padding:5px 9px;vertical-align:middle}
+.productFeatures{list-style:none;margin:18px 0 6px;padding:0;display:grid;gap:9px;max-width:520px}
+.productFeatures li{position:relative;padding-left:18px;font-size:14px;line-height:1.6;color:#5f564d}
+.productFeatures li::before{content:"";position:absolute;left:0;top:.62em;width:6px;height:6px;border-radius:50%;background:#8b7155}
+.productFeatures b{color:#211d18;font-weight:500;margin-right:4px}
+.productFeatures b::after{content:":"}
+.productLong .aboutText{padding-top:6px}
+
 /* KARIA V7.42 — reviews */
 .stars{display:inline-flex;gap:2px;vertical-align:middle}
 .stars svg{color:#cfc2b2;fill:none}

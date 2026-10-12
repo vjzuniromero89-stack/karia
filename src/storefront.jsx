@@ -15,6 +15,15 @@ export const isVideo=m=>String(m?.media_type||"").startsWith("video")||/\.(mp4|w
 export const sortedMedia=list=>[...(list||[])].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
 // main product photo: first image, never a video
 export const mainPhoto=list=>sortedMedia(list).find(m=>!isVideo(m))?.url||"";
+// A product is on sale when it has an original price above its current price.
+export const onSale=p=>Number(p.compareAt||0)>Number(p.price||0);
+const percentOff=p=>Math.round((1-Number(p.price)/Number(p.compareAt))*100);
+// One description field, three parts: first line = short description; the lines right under it = features ("Color: Brown");
+// anything after an empty line = long description.
+export function parseDescription(text){
+ const blocks=String(text||"").replace(/\r/g,"").split(/\n\s*\n/),head=blocks[0].split("\n").map(s=>s.trim()).filter(Boolean);
+ return {short:head[0]||"",features:head.slice(1).map(s=>s.replace(/^[-•*]\s*/,"")),long:blocks.slice(1).join("\n\n").trim()};
+}
 const cartKey=p=>p.cartKey||p.id;
 const money=n=>`$${Number(n||0).toFixed(2)}`;
 
@@ -46,9 +55,10 @@ export function CartDrawer({open,setOpen,cart,setCart,checkout,notice,add}){
 }
 
 /* ───────────────────────── SHOP ───────────────────────── */
+function Price({p}){return onSale(p)?<span className="priceSale"><s>{money(p.compareAt)}</s><b>{money(p.price)}</b></span>:<b>{money(p.price)}</b>}
 export function ProductCard({p,add}){
  const out=soldOut(p);
- return <article className="catalogCard"><a href={`/product/${p.id}`}><div className="catalogImage newArrivalImage"><img src={p.img} alt={p.name} loading="lazy"/>{out?<span className="newBadge soldBadge">SOLD OUT</span>:isNew(p)&&<span className="newBadge">NEW</span>}</div><small>{p.category||p.brand}</small><h2>{p.name}</h2>{p.reviewCount>0&&<div className="cardStars"><Stars value={p.rating}/><span>{p.rating.toFixed(1)} ({p.reviewCount})</span></div>}</a><div className="catalogBuy"><b>{money(p.price)}</b><button onClick={()=>add(p)} disabled={out}>{out?"SOLD OUT":"ADD TO BAG"}</button></div></article>
+ return <article className="catalogCard"><a href={`/product/${p.id}`}><div className="catalogImage newArrivalImage"><img src={p.img} alt={p.name} loading="lazy"/>{out?<span className="newBadge soldBadge">SOLD OUT</span>:onSale(p)?<span className="newBadge saleBadge">SALE −{percentOff(p)}%</span>:isNew(p)&&<span className="newBadge">NEW</span>}</div><small>{p.category||p.brand}</small><h2>{p.name}</h2><div className="cardStars"><Stars value={p.rating||0}/><span>{p.reviewCount>0?`${p.rating.toFixed(1)} (${p.reviewCount})`:"No reviews yet"}</span></div></a><div className="catalogBuy"><Price p={p}/><button onClick={()=>add(p)} disabled={out}>{out?"SOLD OUT":"ADD TO BAG"}</button></div></article>
 }
 
 // Category "ALL" = everything, "NEW" = registered in the last 30 days, anything else = a category name.
@@ -82,6 +92,7 @@ export function ProductPage({products,id,add,Header,reviews=[],user,onSignIn,onS
  const p=products.find(x=>String(x.id)===String(id));
  if(!p)return <div className="catalogPage">{Header}<main className="catalogMain"><div className="catalogHero"><h1>Product not found.</h1><a className="cta" href="/shop">Back to shop <ArrowRight/></a></div></main></div>;
  const media=p.media?.length?p.media:[{url:p.img,media_type:"image"}];
+ const desc=parseDescription(p.description);
  const cur=media[Math.min(sel,media.length-1)],out=soldOut(p),max=Math.max(1,Number(p.stock||0));
  // same category first, then the rest of the shop
  const related=products.filter(x=>x.id!==p.id).sort((a,b)=>(b.category===p.category)-(a.category===p.category)).slice(0,3);
@@ -89,13 +100,14 @@ export function ProductPage({products,id,add,Header,reviews=[],user,onSignIn,onS
   <div className="productGalleryWrap"><div className="productGallery">{isVideo(cur)?<video src={cur.url} controls playsInline muted/>:<img src={cur.url} alt={p.name}/>}{out&&<span className="newBadge soldBadge">SOLD OUT</span>}</div>
    {media.length>1&&<div className="productThumbs">{media.map((m,i)=><button key={m.url||i} className={i===sel?"on":""} onClick={()=>setSel(i)} aria-label={`View ${i+1} of ${media.length}`}>{isVideo(m)?<span><Play/></span>:<img src={m.url} alt=""/>}</button>)}</div>}
   </div>
-  <div className="productInfo"><small>{p.category||p.brand}</small><h1>{p.name}</h1>{p.reviewCount>0&&<a className="cardStars" href="#reviews"><Stars value={p.rating} size={16}/><span>{p.rating.toFixed(1)} · {p.reviewCount} review{p.reviewCount===1?"":"s"}</span></a>}<div className="productPrice">{money(p.price)}</div><p>{p.description||"A KARIA selection chosen for the collection."}</p>
+  <div className="productInfo"><small>{p.category||p.brand}</small><h1>{p.name}</h1><a className="cardStars" href="#reviews"><Stars value={p.rating||0} size={16}/><span>{p.reviewCount>0?`${p.rating.toFixed(1)} · ${p.reviewCount} review${p.reviewCount===1?"":"s"}`:"No reviews yet · be the first"}</span></a><div className="productPrice">{onSale(p)?<><s>{money(p.compareAt)}</s>{money(p.price)}<em>SAVE {percentOff(p)}%</em></>:money(p.price)}</div><p>{desc.short||"A KARIA selection chosen for the collection."}</p>{desc.features.length>0&&<ul className="productFeatures">{desc.features.map((f,i)=>{const at=f.indexOf(":");return <li key={i}>{at>0&&at<28?<><b>{f.slice(0,at)}</b>{f.slice(at+1)}</>:f}</li>})}</ul>}
    {p.tone&&<div className="productFact"><span>DETAILS</span><b>{p.tone}</b></div>}
    <div className="productFact"><span>AVAILABILITY</span><b>{out?"Sold out":`${p.stock} available`}</b></div>
    {!out&&<div className="productFact productQty"><span>QUANTITY</span><div className="cartQty"><button aria-label="Less" onClick={()=>setQty(n=>Math.max(1,n-1))}>−</button><span>{qty}</span><button aria-label="More" onClick={()=>setQty(n=>Math.min(max,n+1))}>+</button></div></div>}
    <button className="productAdd" onClick={()=>add(p,qty)} disabled={out}>{out?"SOLD OUT":<>ADD TO BAG · {money(Number(p.price)*qty)} <ArrowRight/></>}</button>
    <a className="backShop" href="/shop">← Continue shopping</a>
   </div>
+  {desc.long&&<section className="relatedProducts productLong"><div className="catalogContext"><div><small>ABOUT THIS PRODUCT</small><h2>Description</h2></div></div><div className="aboutText">{desc.long.split(/\n+/).map((t,i)=><p key={i}>{t}</p>)}</div></section>}
   {related.length>0&&<section className="relatedProducts"><div className="catalogContext"><div><small>YOU MAY ALSO LIKE</small><h2>More from KARIA</h2></div><a className="dashLink" href="/shop">SHOP ALL</a></div><div className="catalogGrid">{related.map(x=><ProductCard key={x.id} p={x} add={add}/>)}</div></section>}
   <ProductReviews product={p} products={products} reviews={reviews} user={user} onSignIn={onSignIn} onSaved={onSaved}/>
  </main></div>
