@@ -1,0 +1,23 @@
+KARIA V7.36 - STOREFRONT REORGANIZATION
+
+Menu: SHOP - CUSTOMIZE - ABOUT - CONTACT (the current page is underlined).
+"New" is now a filter inside the Shop; /new still works and opens it.
+
+Shop: categories as buttons on top (they scroll sideways on phones), search, sort,
+NEW badge on products added in the last 30 days, SOLD OUT badge.
+Product: gallery with every photo and video, quantity selector, "You may also like".
+Bag: one row per product with + / - and a remove button.
+Account: MY ORDERS page (/orders) with status, items and tracking. Unpaid orders are hidden.
+Contact: /contact with a message form; email, WhatsApp and Instagram appear when set in Admin > Settings.
+About: /about; the text is edited in Admin > Settings.
+Home: cover -> categories -> new arrivals -> Customize -> film. The second 3D cover was removed.
+Footer on every page: Shop, Customize, About, Contact, My orders.
+
+Admin: new Messages tab (Sales) for the contact form; Settings has the Contact & About fields.
+Code: storefront pages moved to src/storefront.jsx.
+
+SQL to run: KARIA-V7.36-STOREFRONT.sql
+- contact_messages table (contact form)
+- public read of the "storefront" setting (contact details + About text)
+- customers can read the lines of their own orders
+Then fill in Admin > Settings > Contact & About pages.

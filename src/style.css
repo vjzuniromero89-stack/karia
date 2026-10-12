@@ -732,3 +732,62 @@ html:has(.customizePage){overflow-y:auto}
 /* KARIA V7.35 — sold out + shipping */
 .catalogBuy button:disabled,.productAdd:disabled{opacity:.45;cursor:not-allowed}
 .cartNotice{margin:0 0 12px;padding:10px 12px;border:1px solid #d8cbb9;background:#f6efe5;border-radius:8px;font-size:12px;line-height:1.4}
+
+/* KARIA V7.36 — storefront reorganization */
+nav a.current{border-bottom:1px solid currentColor;padding-bottom:4px}
+.shopChips{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 28px}
+.shopChips button{appearance:none;display:inline-flex;align-items:center;gap:10px;border:1px solid #cfc2b2;background:transparent;color:#5f564d;padding:11px 16px;border-radius:999px;font:11px Inter;letter-spacing:.06em;cursor:pointer;white-space:nowrap;transition:.2s}
+.shopChips button b{font-size:9px;font-weight:400;color:#9a8d7e}
+.shopChips button:hover{border-color:#211d18;color:#211d18}
+.shopChips button.active{background:#211d18;border-color:#211d18;color:#fff}
+.shopChips button.active b{color:#cfc4b7}
+.catalogEmpty .dashLink,.catalogContext .dashLink{margin:0 0 0 10px;color:inherit}
+.soldBadge{background:#fff;color:#211c18}
+.productGalleryWrap{position:sticky;top:110px;align-self:start;min-width:0}
+.productGalleryWrap .productGallery{position:relative;top:auto}
+.productGallery video{width:100%;height:100%;object-fit:cover;display:block}
+.productThumbs{display:flex;gap:8px;margin-top:10px;overflow-x:auto}
+.productThumbs button{flex:0 0 72px;height:88px;padding:0;border:1px solid transparent;background:#e8ded2;cursor:pointer;opacity:.6;transition:.2s}
+.productThumbs button.on{border-color:#211d18;opacity:1}
+.productThumbs img{width:100%;height:100%;object-fit:cover;display:block}
+.productThumbs span{display:grid;place-items:center;height:100%;color:#211d18}
+.productThumbs svg{width:18px}
+.productQty{align-items:center}
+.cartQty{display:inline-flex;align-items:center;border:1px solid #cfc2b2;margin-top:9px}
+.productQty .cartQty{margin-top:0}
+.cartQty button{width:30px;height:30px;border:0;background:none;font-size:16px!important;line-height:1;cursor:pointer;color:#211d18}
+.cartQty span{min-width:26px;text-align:center;font-size:12px}
+.cartRow .cartRemove{align-self:start}
+.relatedProducts{grid-column:1/-1;margin-top:6vw;border-top:1px solid #cfc2b2}
+.relatedProducts .catalogImage{height:44vh;min-height:300px}
+.narrowMain{max-width:1040px;margin:0 auto}
+.myOrders{display:grid;gap:16px}
+.myOrder{background:#fff;border:1px solid #ded5ca;border-radius:16px;padding:26px}
+.myOrderHead{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.myOrderHead small,.myOrderTrack small,.contactInfo small,.contactInfo span{font-size:9px;letter-spacing:2px;color:#8b7e70}
+.myOrderHead h2{font:34px Italiana;margin:4px 0 0}
+.myOrderNote{color:#6e6459;margin:12px 0 0;font-size:13px}
+.myOrder ul{list-style:none;margin:18px 0 0;padding:0;border-top:1px solid #eee6dc}
+.myOrder li{display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid #eee6dc;font-size:13px}
+.myOrderFoot{display:flex;justify-content:space-between;gap:16px;margin-top:16px;font-size:12px;color:#6e6459}
+.myOrderFoot b{color:#211d18}
+.myOrderTrack{margin-top:16px;padding:14px 16px;background:#f6efe5;border-radius:10px;display:grid;gap:5px}
+.contactGrid{display:grid;grid-template-columns:1.3fr .7fr;gap:4vw;align-items:start}
+.checkoutForm textarea{width:100%;box-sizing:border-box;border:1px solid #d7cec3;background:#fbf9f5;padding:14px 13px;font:13px/1.6 Inter;outline:none;resize:vertical}
+.checkoutForm textarea:focus{border-color:#66594b}
+.contactInfo{display:grid;gap:22px;padding-top:10px}
+.contactInfo div{display:grid;gap:7px;border-top:1px solid #cfc2b2;padding-top:16px}
+.contactInfo a{color:#211d18;font-size:14px}
+.aboutText{max-width:680px}
+.aboutText p{font-size:17px;line-height:1.9;color:#5f564d;margin:0 0 22px}
+.aboutActions{display:flex;gap:14px;flex-wrap:wrap}
+a.accountLink{box-sizing:border-box;text-decoration:none}
+.rowLink{font-size:10px;letter-spacing:.1em;color:inherit}
+.messageCell{white-space:pre-wrap!important;max-width:420px}
+@media(max-width:850px){
+ .shopChips{flex-wrap:nowrap;overflow-x:auto;margin:0 -6vw 22px;padding:0 6vw 4px;scrollbar-width:none}
+ .shopChips::-webkit-scrollbar{display:none}
+ .productGalleryWrap{position:static}
+ .contactGrid{grid-template-columns:1fr;gap:34px}
+ .relatedProducts .catalogImage{height:52vh}
+}
