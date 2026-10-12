@@ -1,6 +1,6 @@
 // KARIA V7.36 — storefront pages: header, bag, shop, product, my orders, contact, about, footer
 import React,{useEffect,useMemo,useState} from "react";
-import {ShoppingBag,User,Search,ArrowRight,Menu,X,Play} from "lucide-react";
+import {ShoppingBag,User,Search,ArrowRight,Menu,X,Play,Star} from "lucide-react";
 import {supabase} from "./supabase";
 
 /* ───────────────────────── HELPERS ───────────────────────── */
@@ -23,7 +23,7 @@ const money=n=>`$${Number(n||0).toFixed(2)}`;
 export function StoreHeader({cartCount,onCart,onAccount}){
  const [menu,setMenu]=useState(false);
  const close=()=>setMenu(false);
- const links=[["SHOP","/shop"],...(CUSTOMIZE_ON?[["CUSTOMIZE","/customize"]]:[]),["ABOUT","/about"],["CONTACT","/contact"]];
+ const links=[["SHOP","/shop"],...(CUSTOMIZE_ON?[["CUSTOMIZE","/customize"]]:[]),["REVIEWS","/reviews"],["ABOUT","/about"],["CONTACT","/contact"]];
  const here=location.pathname;
  return <><header className={menu?"menuHeaderOpen":""}><button className="icon mobile" aria-label="Menu" onClick={()=>setMenu(!menu)}>{menu?<X/>:<Menu/>}</button><a className="logo" href="/">KARIA</a>
   <nav className={menu?"open":""}>{links.map(([label,href])=><a key={href} href={href} className={here===href?"current":""} onClick={close}>{label}</a>)}</nav>
@@ -48,7 +48,7 @@ export function CartDrawer({open,setOpen,cart,setCart,checkout,notice,add}){
 /* ───────────────────────── SHOP ───────────────────────── */
 export function ProductCard({p,add}){
  const out=soldOut(p);
- return <article className="catalogCard"><a href={`/product/${p.id}`}><div className="catalogImage newArrivalImage"><img src={p.img} alt={p.name} loading="lazy"/>{out?<span className="newBadge soldBadge">SOLD OUT</span>:isNew(p)&&<span className="newBadge">NEW</span>}</div><small>{p.category||p.brand}</small><h2>{p.name}</h2></a><div className="catalogBuy"><b>{money(p.price)}</b><button onClick={()=>add(p)} disabled={out}>{out?"SOLD OUT":"ADD TO BAG"}</button></div></article>
+ return <article className="catalogCard"><a href={`/product/${p.id}`}><div className="catalogImage newArrivalImage"><img src={p.img} alt={p.name} loading="lazy"/>{out?<span className="newBadge soldBadge">SOLD OUT</span>:isNew(p)&&<span className="newBadge">NEW</span>}</div><small>{p.category||p.brand}</small><h2>{p.name}</h2>{p.reviewCount>0&&<div className="cardStars"><Stars value={p.rating}/><span>{p.rating.toFixed(1)} ({p.reviewCount})</span></div>}</a><div className="catalogBuy"><b>{money(p.price)}</b><button onClick={()=>add(p)} disabled={out}>{out?"SOLD OUT":"ADD TO BAG"}</button></div></article>
 }
 
 // Category "ALL" = everything, "NEW" = registered in the last 30 days, anything else = a category name.
@@ -76,7 +76,7 @@ export function ShopPage({products,add,Header,startNew}){
 }
 
 /* ───────────────────────── PRODUCT ───────────────────────── */
-export function ProductPage({products,id,add,Header}){
+export function ProductPage({products,id,add,Header,reviews=[],user,onSignIn,onSaved}){
  const [sel,setSel]=useState(0),[qty,setQty]=useState(1);
  useEffect(()=>{setSel(0);setQty(1)},[id]);
  const p=products.find(x=>String(x.id)===String(id));
@@ -89,7 +89,7 @@ export function ProductPage({products,id,add,Header}){
   <div className="productGalleryWrap"><div className="productGallery">{isVideo(cur)?<video src={cur.url} controls playsInline muted/>:<img src={cur.url} alt={p.name}/>}</div>
    {media.length>1&&<div className="productThumbs">{media.map((m,i)=><button key={m.url||i} className={i===sel?"on":""} onClick={()=>setSel(i)} aria-label={`View ${i+1} of ${media.length}`}>{isVideo(m)?<span><Play/></span>:<img src={m.url} alt=""/>}</button>)}</div>}
   </div>
-  <div className="productInfo"><small>{p.category||p.brand}</small><h1>{p.name}</h1><div className="productPrice">{money(p.price)}</div><p>{p.description||"A KARIA selection chosen for the collection."}</p>
+  <div className="productInfo"><small>{p.category||p.brand}</small><h1>{p.name}</h1>{p.reviewCount>0&&<a className="cardStars" href="#reviews"><Stars value={p.rating} size={16}/><span>{p.rating.toFixed(1)} · {p.reviewCount} review{p.reviewCount===1?"":"s"}</span></a>}<div className="productPrice">{money(p.price)}</div><p>{p.description||"A KARIA selection chosen for the collection."}</p>
    {p.tone&&<div className="productFact"><span>DETAILS</span><b>{p.tone}</b></div>}
    <div className="productFact"><span>AVAILABILITY</span><b>{out?"Sold out":`${p.stock} available`}</b></div>
    {!out&&<div className="productFact productQty"><span>QUANTITY</span><div className="cartQty"><button aria-label="Less" onClick={()=>setQty(n=>Math.max(1,n-1))}>−</button><span>{qty}</span><button aria-label="More" onClick={()=>setQty(n=>Math.min(max,n+1))}>+</button></div></div>}
@@ -97,6 +97,56 @@ export function ProductPage({products,id,add,Header}){
    <a className="backShop" href="/shop">← Continue shopping</a>
   </div>
   {related.length>0&&<section className="relatedProducts"><div className="catalogContext"><div><small>YOU MAY ALSO LIKE</small><h2>More from KARIA</h2></div><a className="dashLink" href="/shop">SHOP ALL</a></div><div className="catalogGrid">{related.map(x=><ProductCard key={x.id} p={x} add={add}/>)}</div></section>}
+  <ProductReviews product={p} products={products} reviews={reviews} user={user} onSignIn={onSignIn} onSaved={onSaved}/>
+ </main></div>
+}
+
+/* ───────────────────────── REVIEWS ─────────────────────────
+   Signed-in customers leave one review per product (1–5 stars + text). Admin can hide or delete them. */
+export const ratingOf=list=>list.length?list.reduce((s,r)=>s+Number(r.rating||0),0)/list.length:0;
+export function Stars({value=0,size=14}){
+ const full=Math.round(value);
+ return <span className="stars" role="img" aria-label={`${Number(value).toFixed(1)} out of 5 stars`}>{[1,2,3,4,5].map(i=><Star key={i} width={size} height={size} className={i<=full?"on":""} aria-hidden="true"/>)}</span>
+}
+function ReviewForm({products,productId,user,onSignIn,onSaved}){
+ const [rating,setRating]=useState(5),[state,setState]=useState(""),[pid,setPid]=useState(productId||"");
+ if(!user)return <div className="checkoutForm reviewForm"><h2>Write a review</h2><p className="reviewHint">Sign in to your KARIA account to leave a review.</p><button type="button" className="checkoutPay" onClick={onSignIn}>SIGN IN <ArrowRight/></button></div>;
+ const submit=async e=>{e.preventDefault();const form=e.currentTarget,f=Object.fromEntries(new FormData(form)),product_id=productId||pid;if(!product_id||!supabase){setState("error");return}setState("busy");
+  // one review per customer and product: sending again replaces the earlier one
+  const {error}=await supabase.from("product_reviews").upsert({product_id,user_id:user.id,author_name:String(f.author_name).trim(),rating,body:String(f.body).trim()},{onConflict:"product_id,user_id"});
+  if(error){setState("error");return}form.reset();setState("ok");onSaved?.()};
+ return <form className="checkoutForm reviewForm" onSubmit={submit}><h2>Write a review</h2>
+  {!productId&&<label>Product<select value={pid} onChange={e=>setPid(e.target.value)} required><option value="">Choose a product</option>{products.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>}
+  <div className="starPick" role="radiogroup" aria-label="Your rating"><span>YOUR RATING</span><div>{[1,2,3,4,5].map(i=><button type="button" key={i} role="radio" aria-checked={rating===i} aria-label={`${i} star${i>1?"s":""}`} className={i<=rating?"on":""} onClick={()=>setRating(i)}><Star aria-hidden="true"/></button>)}</div></div>
+  <label>Name shown with your review<input name="author_name" defaultValue={user.user_metadata?.full_name||""} required maxLength={60}/></label>
+  <label>Your review<textarea name="body" rows={5} required minLength={3} maxLength={2000}/></label>
+  {state==="ok"&&<p className="checkoutCouponSuccess">Thank you — your review is published.</p>}{state==="error"&&<p className="checkoutError">We could not save your review right now. Please try again later.</p>}
+  <button className="checkoutPay" disabled={state==="busy"}>{state==="busy"?"SENDING…":"PUBLISH REVIEW"} <ArrowRight/></button></form>
+}
+function ReviewList({reviews,products,showProduct,empty}){
+ if(!reviews.length)return <div className="catalogEmpty">{empty}</div>;
+ const name=id=>products.find(p=>p.id===id)?.name;
+ return <div className="reviewList">{reviews.map(r=><article className="reviewItem" key={r.id}>
+  <div className="reviewTop"><Stars value={r.rating} size={16}/><span>{r.created_at?new Date(r.created_at).toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"}):""}</span></div>
+  <p>{r.body}</p>
+  <div className="reviewBy"><b>{r.author_name||"KARIA customer"}</b>{showProduct&&name(r.product_id)&&<a href={`/product/${r.product_id}`}>{name(r.product_id)}</a>}</div>
+ </article>)}</div>
+}
+function ReviewSummary({reviews}){
+ if(!reviews.length)return null;
+ return <div className="reviewSummary"><strong>{ratingOf(reviews).toFixed(1)}</strong><div><Stars value={ratingOf(reviews)} size={18}/><span>{reviews.length} review{reviews.length===1?"":"s"}</span></div></div>
+}
+// Reviews of one product, shown at the bottom of its page.
+export function ProductReviews({product,products,reviews,user,onSignIn,onSaved}){
+ const mine=reviews.filter(r=>r.product_id===product.id);
+ return <section className="relatedProducts productReviews" id="reviews"><div className="catalogContext"><div><small>CUSTOMER REVIEWS</small><h2>What customers say</h2></div><ReviewSummary reviews={mine}/></div>
+  <div className="reviewGrid"><ReviewList reviews={mine} products={products} empty="No reviews yet. Be the first to review this product."/><ReviewForm products={products} productId={product.id} user={user} onSignIn={onSignIn} onSaved={onSaved}/></div></section>
+}
+// Every review in the store, on its own page.
+export function ReviewsPage({Header,products,reviews,user,onSignIn,onSaved}){
+ return <div className="catalogPage">{Header}<main className="catalogMain narrowMain"><div className="catalogHero"><small>FROM OUR CUSTOMERS</small><h1>Reviews.</h1><p>Real words from people who carry a KARIA bag.</p></div>
+  <div className="catalogContext"><div><small>ALL PRODUCTS</small><h2>Customer reviews</h2></div><ReviewSummary reviews={reviews}/></div>
+  <div className="reviewGrid"><ReviewList reviews={reviews} products={products} showProduct empty="No reviews yet. Be the first to leave one."/><ReviewForm products={products} user={user} onSignIn={onSignIn} onSaved={onSaved}/></div>
  </main></div>
 }
 
@@ -162,5 +212,5 @@ function Newsletter(){
  return <div className="newsletter"><small>JOIN THE KARIA LETTER</small><form onSubmit={submit}><input name="email" type="email" placeholder="Your email address" required/><button aria-label="Subscribe" disabled={state==="busy"}>→</button></form>{state==="ok"&&<p className="newsletterNote">Thank you — you are on the list.</p>}{state==="error"&&<p className="newsletterNote">We could not save your email right now. Please try again later.</p>}</div>
 }
 export function Footer({canAdmin,openAdmin}){
- return <footer><div><div className="logo">KARIA</div><p>Fashion, beauty, home, lifestyle & more.<br/>Curated by KARIA.</p></div><div className="footLinks"><a href="/shop">Shop</a>{CUSTOMIZE_ON&&<a href="/customize">Customize</a>}<a href="/about">About</a><a href="/contact">Contact</a><a href="/orders">My orders</a></div><Newsletter/>{canAdmin&&<button className="adminLink" onClick={openAdmin}>Admin</button>}<div className="copyright">© 2026 KARIA · ONE STORE · MANY WORLDS</div></footer>
+ return <footer><div><div className="logo">KARIA</div><p>Fashion, beauty, home, lifestyle & more.<br/>Curated by KARIA.</p></div><div className="footLinks"><a href="/shop">Shop</a>{CUSTOMIZE_ON&&<a href="/customize">Customize</a>}<a href="/reviews">Reviews</a><a href="/about">About</a><a href="/contact">Contact</a><a href="/orders">My orders</a></div><Newsletter/>{canAdmin&&<button className="adminLink" onClick={openAdmin}>Admin</button>}<div className="copyright">© 2026 KARIA · ONE STORE · MANY WORLDS</div></footer>
 }

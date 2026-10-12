@@ -742,6 +742,35 @@ html:has(.customizePage){overflow-y:auto}
 .customizeTeaserArt .bagPhoto:nth-child(2),.customizeTeaserArt .bagPhoto:nth-child(4){transform:translateY(28px)}
 .customizeTeaserArt:hover .bagPhoto{transform:translateY(-6px)}
 
+/* KARIA V7.42 — reviews */
+.stars{display:inline-flex;gap:2px;vertical-align:middle}
+.stars svg{color:#cfc2b2;fill:none}
+.stars svg.on{color:#b98a3a;fill:#b98a3a}
+.cardStars{display:flex;align-items:center;gap:8px;margin:-6px 0 12px;font-size:11px;color:#8b7e70;text-decoration:none}
+.productInfo .cardStars{margin:0 0 14px}
+.productReviews{padding-bottom:20px}
+.reviewGrid{display:grid;grid-template-columns:1.2fr .8fr;gap:4vw;align-items:start}
+.reviewSummary{display:flex;align-items:center;gap:14px}
+.reviewSummary strong{font:54px/1 Italiana}
+.reviewSummary div{display:grid;gap:5px}
+.reviewSummary span{font-size:11px;color:#8b7e70}
+.reviewList{display:grid;gap:0}
+.reviewItem{padding:22px 0;border-bottom:1px solid #d9cdbf}
+.reviewItem:first-child{border-top:1px solid #d9cdbf}
+.reviewTop{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:11px;color:#8b7e70}
+.reviewItem p{margin:12px 0;line-height:1.75;color:#4f463d;white-space:pre-line}
+.reviewBy{display:flex;flex-wrap:wrap;gap:12px;align-items:baseline;font-size:12px}
+.reviewBy a{color:#8b7155;font-size:11px}
+.reviewHint{margin:0;color:#6e6459;font-size:13px;line-height:1.6}
+.starPick{display:grid;gap:8px}
+.starPick>span{font-size:9px;letter-spacing:.12em}
+.starPick>div{display:flex;gap:4px}
+.starPick button{width:44px;height:44px;display:grid;place-items:center;border:1px solid #d7cec3;background:#fbf9f5;cursor:pointer;color:#cfc2b2}
+.starPick button svg{width:20px;height:20px}
+.starPick button.on{color:#b98a3a;border-color:#b98a3a}
+.starPick button.on svg{fill:#b98a3a}
+@media(max-width:850px){.reviewGrid{grid-template-columns:1fr;gap:34px}}
+
 /* KARIA V7.36 — storefront reorganization */
 nav a.current{border-bottom:1px solid currentColor;padding-bottom:4px}
 .shopChips{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 28px}
