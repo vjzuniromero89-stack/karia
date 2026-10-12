@@ -86,7 +86,7 @@ export function ProductPage({products,id,add,Header,reviews=[],user,onSignIn,onS
  // same category first, then the rest of the shop
  const related=products.filter(x=>x.id!==p.id).sort((a,b)=>(b.category===p.category)-(a.category===p.category)).slice(0,3);
  return <div className="catalogPage">{Header}<main className="productPage">
-  <div className="productGalleryWrap"><div className="productGallery">{isVideo(cur)?<video src={cur.url} controls playsInline muted/>:<img src={cur.url} alt={p.name}/>}</div>
+  <div className="productGalleryWrap"><div className="productGallery">{isVideo(cur)?<video src={cur.url} controls playsInline muted/>:<img src={cur.url} alt={p.name}/>}{out&&<span className="newBadge soldBadge">SOLD OUT</span>}</div>
    {media.length>1&&<div className="productThumbs">{media.map((m,i)=><button key={m.url||i} className={i===sel?"on":""} onClick={()=>setSel(i)} aria-label={`View ${i+1} of ${media.length}`}>{isVideo(m)?<span><Play/></span>:<img src={m.url} alt=""/>}</button>)}</div>}
   </div>
   <div className="productInfo"><small>{p.category||p.brand}</small><h1>{p.name}</h1>{p.reviewCount>0&&<a className="cardStars" href="#reviews"><Stars value={p.rating} size={16}/><span>{p.rating.toFixed(1)} · {p.reviewCount} review{p.reviewCount===1?"":"s"}</span></a>}<div className="productPrice">{money(p.price)}</div><p>{p.description||"A KARIA selection chosen for the collection."}</p>

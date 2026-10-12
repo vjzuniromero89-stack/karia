@@ -780,7 +780,10 @@ nav a.current{border-bottom:1px solid currentColor;padding-bottom:4px}
 .shopChips button.active{background:#211d18;border-color:#211d18;color:#fff}
 .shopChips button.active b{color:#cfc4b7}
 .catalogEmpty .dashLink,.catalogContext .dashLink{margin:0 0 0 10px;color:inherit}
-.soldBadge{background:#fff;color:#211c18}
+/* KARIA V7.45 — SOLD OUT as a wine-red ribbon across the top-right corner of the photo */
+.soldBadge{left:auto;right:-62px;top:30px;width:240px;box-sizing:border-box;transform:rotate(40deg);background:#8a2f24;color:#fff;padding:10px 0;text-align:center;font-size:12px;letter-spacing:3px;font-weight:600;box-shadow:0 4px 14px #211d1833}
+.productGalleryWrap .productGallery{overflow:hidden}
+.productGallery .soldBadge{right:-52px;top:38px;width:260px;font-size:13px;padding:12px 0}
 .productGalleryWrap{position:sticky;top:110px;align-self:start;min-width:0}
 .productGalleryWrap .productGallery{position:relative;top:auto}
 .productGallery video{width:100%;height:100%;object-fit:cover;display:block}
@@ -829,3 +832,6 @@ a.accountLink{box-sizing:border-box;text-decoration:none}
  .contactGrid{grid-template-columns:1fr;gap:34px}
  .relatedProducts .catalogImage{height:52vh}
 }
+
+/* KARIA V7.45 — shop photos keep the shape of the pictures (3:2), so the bag is never cropped on narrow screens */
+.catalogImage,.relatedProducts .catalogImage{height:auto;min-height:0;aspect-ratio:3/2}
