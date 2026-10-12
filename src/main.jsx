@@ -34,6 +34,11 @@ function CheckoutPage({cart,user,Header,onSignIn}){
  return <div className="catalogPage">{Header}<main className="checkoutPage"><div className="checkoutIntro"><small>SECURE CHECKOUT</small><h1>Complete your order.</h1><p>Enter your shipping details to continue with your KARIA order.</p></div><div className="checkoutGrid"><form className="checkoutForm" onSubmit={submit}><h2>Shipping details</h2><label>Full name<input name="full_name" required/></label><label>Email<input value={user?.email||''} readOnly placeholder={user?'':'Sign in to continue'}/></label>{!user&&<div className="checkoutAuthNotice">Please sign in to your KARIA account before submitting the order. <button type="button" className="checkoutSignIn" onClick={onSignIn}>SIGN IN OR CREATE ACCOUNT</button></div>}<label>Address<input name="address1" required/></label><label>Apartment / suite<input name="address2"/></label><div className="checkoutTwo"><label>City<input name="city" required/></label><label>State / Province<input name="state" required/></label></div><div className="checkoutTwo"><label>ZIP / Postal code<input name="postal_code" required/></label><label>Country<select name="country" defaultValue="US"><option value="US">United States</option><option value="NI">Nicaragua</option><option value="SV">El Salvador</option><option value="OTHER">Other</option></select></label></div><label>Phone<input name="phone" type="tel"/></label><div className="checkoutCoupon"><label>Coupon code<input value={couponCode} onChange={e=>{setCouponCode(e.target.value.toUpperCase());setCoupon(null)}} placeholder="e.g. KARIA05"/></label><button type="button" onClick={applyCoupon} disabled={couponBusy}>{couponBusy?'CHECKING…':'APPLY COUPON'}</button></div>{notice&&<p className={coupon&&notice.includes('applied')?'checkoutCouponSuccess':'checkoutError'}>{notice}</p>}<button className="checkoutPay" disabled={busy||!cart.length||!user}>{busy?'CREATING ORDER…':user?'CONTINUE TO PAYMENT':'SIGN IN REQUIRED'} <ArrowRight/></button><a className="checkoutBack" href="/shop">← Return to shop</a></form><aside className="checkoutSummary"><small>YOUR ORDER</small><h2>{cart.length} piece{cart.length===1?'':'s'}</h2>{grouped.map(p=><div className="checkoutItem" key={p.cartKey||p.id}><img src={p.img}/><div><b>{p.name}</b><span>Qty {p.qty}</span>{p.customization&&<span className="checkoutCustom">{p.tone}</span>}</div><strong>${(Number(p.price)*p.qty).toFixed(2)}</strong></div>)}<div className="checkoutLine"><span>Subtotal</span><b>${subtotal.toFixed(2)}</b></div>{coupon&&<div className="checkoutLine couponDiscount"><span>Coupon <b>{coupon.code}</b></span><b>−${discount.toFixed(2)}</b></div>}<div className="checkoutLine"><span>Shipping</span>{shipRule?<b>{shipping>0?`$${shipping.toFixed(2)}`:'Free'}</b>:<span>Confirmed at payment</span>}</div><div className="checkoutTotal"><span>Total</span><b>${totalAfterDiscount.toFixed(2)}</b></div></aside></div></main></div>
 }
 
+// Photos served by the site itself (/products/<slug>.jpg) have a 640px copy for small spots like the home page cover;
+// a full-size photo squeezed into a tiny tilted card looks jagged.
+const smallPhoto=url=>String(url||"").startsWith("/products/")&&String(url).endsWith(".jpg")?String(url).slice(0,-4)+"-thumb.jpg":url;
+const small=p=>p?.thumb||p?.img;
+
 function App(){
  useEffect(()=>{
   if('scrollRestoration' in window.history)window.history.scrollRestoration='manual';
@@ -56,7 +61,7 @@ function App(){
  // Contact details and About text, edited in Admin → Settings.
  const [storefront,setStorefront]=useState({});
  useEffect(()=>{if(!supabase)return;supabase.from('settings').select('value').eq('key','storefront').maybeSingle().then(({data})=>setStorefront(data?.value||{}))},[]);
- useEffect(()=>{if(!supabase)return; (async()=>{const [{data},{data:stockRows}]=await Promise.all([supabase.from("products").select("id,name,price,sku,materials,dimensions,description,brand_id,category,created_at,product_media(url,media_type,sort_order)").eq("active",true).order("created_at",{ascending:false}),supabase.from("product_stock").select("*")]);const stockMap=Object.fromEntries((stockRows||[]).map(r=>[r.product_id,Number(r.stock??r.quantity??r.qty??0)]));setStoreProducts((data||[]).filter(p=>p.sku!==CUSTOM_SKU).map((p,i)=>({id:p.id,name:p.name,brand:"KARIA Artisan",price:Number(p.price),img:mainPhoto(p.product_media)||products[i%products.length].img,media:sortedMedia(p.product_media),stock:stockMap[p.id]||0,tone:p.materials||p.dimensions||"Handcrafted",description:p.description||"",category:p.category||"",created_at:p.created_at||""})))})()},[]);
+ useEffect(()=>{if(!supabase)return; (async()=>{const [{data},{data:stockRows}]=await Promise.all([supabase.from("products").select("id,name,price,sku,materials,dimensions,description,brand_id,category,created_at,product_media(url,media_type,sort_order)").eq("active",true).order("created_at",{ascending:false}),supabase.from("product_stock").select("*")]);const stockMap=Object.fromEntries((stockRows||[]).map(r=>[r.product_id,Number(r.stock??r.quantity??r.qty??0)]));setStoreProducts((data||[]).filter(p=>p.sku!==CUSTOM_SKU).map((p,i)=>({id:p.id,name:p.name,brand:"KARIA Artisan",price:Number(p.price),img:mainPhoto(p.product_media)||products[i%products.length].img,media:sortedMedia(p.product_media),thumb:smallPhoto(mainPhoto(p.product_media)),stock:stockMap[p.id]||0,tone:p.materials||p.dimensions||"Handcrafted",description:p.description||"",category:p.category||"",created_at:p.created_at||""})))})()},[]);
  const checkout=()=>{if(!cart.length)return;try{localStorage.setItem('karia_cart',JSON.stringify(cart))}catch{}setCartOpen(false);window.location.assign('/checkout')};
  useEffect(()=>{try{localStorage.setItem('karia_cart',JSON.stringify(cart))}catch{}},[cart]);
  const loadProfile=async(u)=>{if(!u||!supabase){setProfile(null);return} const {data}=await supabase.from("profiles").select("id,full_name,role,disabled").eq("id",u.id).single(); setProfile(data||null)};
@@ -107,19 +112,19 @@ function HomePage({Header,storeProducts}){
        <div className="phoneScreenTop"><b>KARIA</b><span>SHOP</span></div>
        <div className="phoneScreenHero"><small>THE KARIA EDIT</small><strong>Find your<br/><i>world.</i></strong></div>
        <div className="phoneScreenGrid">
-        {(storeProducts.length?storeProducts:products).slice(0,4).map((p,i)=><div key={p.id||i}><img src={p.img}/></div>)}
+        {(storeProducts.length?storeProducts:products).slice(0,4).map((p,i)=><div key={p.id||i}><img src={small(p)}/></div>)}
        </div>
        <div className="phoneScreenNav"><span>HOME</span><span>DISCOVER</span><span>BAG</span></div>
       </div>
      </div>
      <div className="productOrbit orbitOne">
-      <div className="orbitCard"><img src={(storeProducts[0]||products[0]).img}/><span>{(storeProducts[0]||products[0]).name}</span></div>
+      <div className="orbitCard"><img src={small(storeProducts[0]||products[0])}/><span>{(storeProducts[0]||products[0]).name}</span></div>
      </div>
      <div className="productOrbit orbitTwo">
-      <div className="orbitCard orbitCardWide"><img src={(storeProducts[1]||products[1]).img}/><span>STYLE</span></div>
+      <div className="orbitCard orbitCardWide"><img src={small(storeProducts[1]||products[1])}/><span>STYLE</span></div>
      </div>
      <div className="productOrbit orbitThree">
-      <div className="orbitCard orbitCardSmall"><img src={(storeProducts[2]||products[2]).img}/><span>NEW</span></div>
+      <div className="orbitCard orbitCardSmall"><img src={small(storeProducts[2]||products[2])}/><span>NEW</span></div>
      </div>
      <div className="productOrbit orbitFour">
       <div className="orbitMini"><ShoppingBag/></div>
@@ -141,9 +146,9 @@ function HomePage({Header,storeProducts}){
        <div className="worldNumber">0{i+1}</div>
        <div className="compositionStage">
         <span className="compositionArc arcA"></span><span className="compositionArc arcB"></span><span className="compositionLine lineA"></span>
-        <div className="productFloat productMain"><img src={storeProducts[w.a]?.img||["/products/bag-brown.jpg","/products/bag-blue.jpg","/products/bag-detail.jpg"][w.a]}/></div>
-        <div className="productFloat productSide"><img src={storeProducts[w.b]?.img||["/products/bag-brown.jpg","/products/bag-blue.jpg","/products/bag-detail.jpg"][w.b]}/></div>
-        <div className="productFloat productTiny"><img src={storeProducts[w.c]?.img||["/products/bag-brown.jpg","/products/bag-blue.jpg","/products/bag-detail.jpg"][w.c]}/></div>
+        <div className="productFloat productMain"><img src={small(storeProducts[w.a])||["/products/bag-brown.jpg","/products/bag-blue.jpg","/products/bag-detail.jpg"][w.a]}/></div>
+        <div className="productFloat productSide"><img src={small(storeProducts[w.b])||["/products/bag-brown.jpg","/products/bag-blue.jpg","/products/bag-detail.jpg"][w.b]}/></div>
+        <div className="productFloat productTiny"><img src={small(storeProducts[w.c])||["/products/bag-brown.jpg","/products/bag-blue.jpg","/products/bag-detail.jpg"][w.c]}/></div>
         <span className="floatingSphere sphereA"></span><span className="floatingSphere sphereB"></span>
        </div>
        <div className="worldMeta"><small>{w.sub}</small><h3>{w.name}</h3><span>EXPLORE <ArrowRight/></span></div>
@@ -154,7 +159,7 @@ function HomePage({Header,storeProducts}){
    <section className="newKaria" id="new">
     <div className="newKariaHead"><div><small>02 — NEW AT KARIA</small><h2>Fresh discoveries.</h2></div><a href="/shop">SHOP ALL <ArrowRight/></a></div>
     <div className="newProductRail">
-     {storeProducts.slice(0,4).map((p,i)=><a className="newProductCard" href={`/product/${p.id}`} key={p.id||i}><div className="newProductImage"><img src={p.img}/><span>0{i+1}</span></div><div><small>{p.brand||"KARIA"}</small><h3>{p.name}</h3><b>${Number(p.price||0).toFixed(2)}</b></div></a>)}
+     {storeProducts.slice(0,4).map((p,i)=><a className="newProductCard" href={`/product/${p.id}`} key={p.id||i}><div className="newProductImage"><img src={small(p)}/><span>0{i+1}</span></div><div><small>{p.brand||"KARIA"}</small><h3>{p.name}</h3><b>${Number(p.price||0).toFixed(2)}</b></div></a>)}
      {!storeProducts.length&&<>
       <a className="newProductCard" href="/shop"><div className="newProductImage"><img src="/products/bag-brown.jpg"/><span>01</span></div><div><small>KARIA</small><h3>Discover the collection</h3></div></a>
       <a className="newProductCard" href="/shop"><div className="newProductImage"><img src="/products/bag-blue.jpg"/><span>02</span></div><div><small>KARIA</small><h3>New worlds arriving</h3></div></a>
