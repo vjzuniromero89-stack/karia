@@ -3,7 +3,7 @@ import {createRoot} from "react-dom/client";
 import {ShoppingBag,ArrowRight,X,MoveDown,Package,Wallet,Users,Boxes,BarChart3,Settings,ShieldCheck,Palette,Tag,LayoutGrid,UserCog,Mail} from "lucide-react";
 import "./style.css";
 import {supabase,configured} from "./supabase";
-import {StoreHeader,CartDrawer,ShopPage,ProductPage,OrdersPage,ContactPage,AboutPage,Footer,mainPhoto,sortedMedia} from "./storefront";
+import {CUSTOMIZE_ON,StoreHeader,CartDrawer,ShopPage,ProductPage,OrdersPage,ContactPage,AboutPage,Footer,mainPhoto,sortedMedia} from "./storefront";
 import {CustomizePage,CustomizeAdmin,CustomizationSheet,BagPhoto,BUILTIN_STYLES,CUSTOM_SKU} from "./customize";
 
 const products=[
@@ -69,7 +69,7 @@ function App(){
  let page;
  if(path==="/checkout/success")page=<CheckoutSuccessPage setCart={setCart} Header={Header}/>;
  else if(path==="/checkout")page=<CheckoutPage cart={cart} user={user} Header={Header} onSignIn={signIn}/>;
- else if(path==="/shop"||path==="/new")page=<ShopPage {...shop} startNew={path==="/new"}/>;
+ else if(path==="/shop"||path==="/new"||(path==="/customize"&&!CUSTOMIZE_ON))page=<ShopPage {...shop} startNew={path==="/new"}/>;
  else if(path==="/customize")page=<CustomizePage add={add} Header={Header}/>;
  else if(path==="/orders")page=<OrdersPage user={user} Header={Header} onSignIn={signIn}/>;
  else if(path==="/contact")page=<ContactPage Header={Header} info={storefront}/>;
@@ -157,13 +157,13 @@ function HomePage({Header,storeProducts}){
     <div className="newKariaClosing"><span>ONE STORE</span><b>KARIA</b><span>MANY WORLDS</span></div>
    </section>
 
-   <section className="customizeTeaser" id="customize">
+   {CUSTOMIZE_ON&&<section className="customizeTeaser" id="customize">
     <div className="customizeTeaserCopy"><small>03 — KARIA ATELIER</small><h2>Design your own<br/><i>handmade bag.</i></h2><p>Choose one of ten stripe designs, color every stripe and the handle, and see it on the real KARIA bag. We crochet it by hand, just for you.</p><a href="/customize" className="cta">CREATE YOUR BAG <ArrowRight/></a></div>
     <a href="/customize" className="customizeTeaserArt">{BUILTIN_STYLES.slice(0,4).map((s,i)=><BagPhoto thumb key={s.id} style={s} colors={[{body:"coffee",handle:"coffee"},{body:"milky-white",handle:"coffee",s1:"rose",s2:"coffee",s3:"rose",s4:"coffee",s5:"rose"},{body:"denim-blue",stripes:"milky-white",handle:"denim-blue"},{body:"golden-yellow",wide:"milky-white",handle:"coffee"}][i]}/>)}</a>
-   </section>
+   </section>}
 
    <section className="productionFilm" id="production-film">
-    <div className="productionFilmHead"><div><small>04 — BEHIND KARIA</small><h2>The making of<br/><i>something special.</i></h2></div><p>A closer look at the details, hands and process behind the products we bring into the KARIA world.</p></div>
+    <div className="productionFilmHead"><div><small>{CUSTOMIZE_ON?"04":"03"} — BEHIND KARIA</small><h2>The making of<br/><i>something special.</i></h2></div><p>A closer look at the details, hands and process behind the products we bring into the KARIA world.</p></div>
     <div className="productionFilmFrame">
      <video src="/products/bag-video.mp4" autoPlay muted loop playsInline preload="metadata" aria-label="KARIA production video"/>
      <span className="productionFilmBadge">KARIA · PRODUCTION FILM</span>

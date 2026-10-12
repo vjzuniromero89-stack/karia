@@ -4,6 +4,9 @@ import {ShoppingBag,User,Search,ArrowRight,Menu,X,Play} from "lucide-react";
 import {supabase} from "./supabase";
 
 /* ───────────────────────── HELPERS ───────────────────────── */
+// Customize (design your own bag) is switched off for now: no menu link, no home teaser, /customize opens the Shop.
+// Set to true to bring it back; the page and its admin settings are untouched.
+export const CUSTOMIZE_ON=false;
 // Made-to-order custom bags have no stock; everything else sells only what Inventory says is available.
 export const soldOut=p=>!p.customization&&Number(p.stock||0)<=0;
 const NEW_DAYS=30;
@@ -20,7 +23,7 @@ const money=n=>`$${Number(n||0).toFixed(2)}`;
 export function StoreHeader({cartCount,onCart,onAccount}){
  const [menu,setMenu]=useState(false);
  const close=()=>setMenu(false);
- const links=[["SHOP","/shop"],["CUSTOMIZE","/customize"],["ABOUT","/about"],["CONTACT","/contact"]];
+ const links=[["SHOP","/shop"],...(CUSTOMIZE_ON?[["CUSTOMIZE","/customize"]]:[]),["ABOUT","/about"],["CONTACT","/contact"]];
  const here=location.pathname;
  return <><header className={menu?"menuHeaderOpen":""}><button className="icon mobile" aria-label="Menu" onClick={()=>setMenu(!menu)}>{menu?<X/>:<Menu/>}</button><a className="logo" href="/">KARIA</a>
   <nav className={menu?"open":""}>{links.map(([label,href])=><a key={href} href={href} className={here===href?"current":""} onClick={close}>{label}</a>)}</nav>
@@ -129,7 +132,7 @@ export function ContactPage({Header,info={}}){
  const [state,setState]=useState("");
  const wa=String(info.whatsapp||"").replace(/[^0-9]/g,""),ig=String(info.instagram||"").replace(/^@/,"").trim();
  const submit=async e=>{e.preventDefault();const form=e.currentTarget,f=Object.fromEntries(new FormData(form));if(!supabase){setState("error");return}setState("busy");const {error}=await supabase.from("contact_messages").insert({name:String(f.name).trim(),email:String(f.email).trim().toLowerCase(),message:String(f.message).trim()});if(error){setState("error");return}form.reset();setState("ok")};
- return <div className="catalogPage">{Header}<main className="catalogMain narrowMain"><div className="catalogHero"><small>WE ARE HERE TO HELP</small><h1>Contact us.</h1><p>Questions about an order, a custom bag or anything else — write to us and we will answer as soon as we can.</p></div>
+ return <div className="catalogPage">{Header}<main className="catalogMain narrowMain"><div className="catalogHero"><small>WE ARE HERE TO HELP</small><h1>Contact us.</h1><p>Questions about an order, a product or anything else — write to us and we will answer as soon as we can.</p></div>
   <div className="contactGrid">
    <form className="checkoutForm" onSubmit={submit}><h2>Send a message</h2><label>Name<input name="name" required maxLength={120}/></label><label>Email<input name="email" type="email" required maxLength={200}/></label><label>Message<textarea name="message" rows={6} required maxLength={4000}/></label>
     {state==="ok"&&<p className="checkoutCouponSuccess">Thank you — your message was sent.</p>}{state==="error"&&<p className="checkoutError">We could not send your message right now. Please try again later.</p>}
@@ -143,12 +146,12 @@ export function ContactPage({Header,info={}}){
   </div></main></div>
 }
 
-const ABOUT_DEFAULT=["KARIA is one store with many worlds — fashion, beauty, home and lifestyle pieces chosen one by one.","Our handmade bags are crocheted by hand in small batches. With KARIA Atelier you can design your own: pick a style, choose every color, and we make it just for you."];
+const ABOUT_DEFAULT=["KARIA is one store with many worlds — fashion, beauty, home and lifestyle pieces chosen one by one.","Our handmade bags are crocheted by hand in small batches."+(CUSTOMIZE_ON?" With KARIA Atelier you can design your own: pick a style, choose every color, and we make it just for you.":"")];
 export function AboutPage({Header,info={}}){
  const text=String(info.about||"").split(/\n+/).map(s=>s.trim()).filter(Boolean);
  return <div className="catalogPage">{Header}<main className="catalogMain narrowMain"><div className="catalogHero"><small>OUR STORY</small><h1>About KARIA.</h1></div>
   <div className="aboutText">{(text.length?text:ABOUT_DEFAULT).map((t,i)=><p key={i}>{t}</p>)}</div>
-  <div className="aboutActions"><a className="cta" href="/shop">SHOP KARIA <ArrowRight/></a><a className="cta" href="/customize">CREATE YOUR BAG <ArrowRight/></a></div>
+  <div className="aboutActions"><a className="cta" href="/shop">SHOP KARIA <ArrowRight/></a>{CUSTOMIZE_ON&&<a className="cta" href="/customize">CREATE YOUR BAG <ArrowRight/></a>}</div>
  </main></div>
 }
 
@@ -159,5 +162,5 @@ function Newsletter(){
  return <div className="newsletter"><small>JOIN THE KARIA LETTER</small><form onSubmit={submit}><input name="email" type="email" placeholder="Your email address" required/><button aria-label="Subscribe" disabled={state==="busy"}>→</button></form>{state==="ok"&&<p className="newsletterNote">Thank you — you are on the list.</p>}{state==="error"&&<p className="newsletterNote">We could not save your email right now. Please try again later.</p>}</div>
 }
 export function Footer({canAdmin,openAdmin}){
- return <footer><div><div className="logo">KARIA</div><p>Fashion, beauty, home, lifestyle & more.<br/>Curated by KARIA.</p></div><div className="footLinks"><a href="/shop">Shop</a><a href="/customize">Customize</a><a href="/about">About</a><a href="/contact">Contact</a><a href="/orders">My orders</a></div><Newsletter/>{canAdmin&&<button className="adminLink" onClick={openAdmin}>Admin</button>}<div className="copyright">© 2026 KARIA · ONE STORE · MANY WORLDS</div></footer>
+ return <footer><div><div className="logo">KARIA</div><p>Fashion, beauty, home, lifestyle & more.<br/>Curated by KARIA.</p></div><div className="footLinks"><a href="/shop">Shop</a>{CUSTOMIZE_ON&&<a href="/customize">Customize</a>}<a href="/about">About</a><a href="/contact">Contact</a><a href="/orders">My orders</a></div><Newsletter/>{canAdmin&&<button className="adminLink" onClick={openAdmin}>Admin</button>}<div className="copyright">© 2026 KARIA · ONE STORE · MANY WORLDS</div></footer>
 }
