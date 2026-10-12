@@ -4,7 +4,7 @@ import {ShoppingBag,ArrowRight,X,MoveDown,Package,Wallet,Users,Boxes,BarChart3,S
 import "./style.css";
 import {supabase,configured} from "./supabase";
 import {StoreHeader,CartDrawer,ShopPage,ProductPage,OrdersPage,ContactPage,AboutPage,Footer,mainPhoto,sortedMedia} from "./storefront";
-import {CustomizePage,CustomizeAdmin,CustomizationSheet,BagSVG,BUILTIN_STYLES,CUSTOM_SKU} from "./customize";
+import {CustomizePage,CustomizeAdmin,CustomizationSheet,BagPhoto,BUILTIN_STYLES,CUSTOM_SKU} from "./customize";
 
 const products=[
  {id:1,name:"Terra Woven Bag",brand:"Independent Artisan",price:118,img:"/products/bag-brown.jpg",stock:4,tone:"Cocoa / Ivory"},
@@ -158,8 +158,8 @@ function HomePage({Header,storeProducts}){
    </section>
 
    <section className="customizeTeaser" id="customize">
-    <div className="customizeTeaserCopy"><small>03 — KARIA ATELIER</small><h2>Design your own<br/><i>handmade bag.</i></h2><p>Choose one of ten stripe designs, color every stripe and the handle, and watch your bag come to life in 3D. We crochet it by hand, just for you.</p><a href="/customize" className="cta">CREATE YOUR BAG <ArrowRight/></a></div>
-    <a href="/customize" className="customizeTeaserArt">{BUILTIN_STYLES.slice(0,4).map((s,i)=><BagSVG key={s.id} style={s} colors={[{body:"coffee",handle:"coffee"},{body:"milky-white",handle:"coffee",s1:"rose",s2:"coffee",s3:"rose",s4:"coffee",s5:"rose"},{body:"denim-blue",stripes:"milky-white",handle:"denim-blue"},{body:"golden-yellow",wide:"milky-white",handle:"coffee"}][i]}/>)}</a>
+    <div className="customizeTeaserCopy"><small>03 — KARIA ATELIER</small><h2>Design your own<br/><i>handmade bag.</i></h2><p>Choose one of ten stripe designs, color every stripe and the handle, and see it on the real KARIA bag. We crochet it by hand, just for you.</p><a href="/customize" className="cta">CREATE YOUR BAG <ArrowRight/></a></div>
+    <a href="/customize" className="customizeTeaserArt">{BUILTIN_STYLES.slice(0,4).map((s,i)=><BagPhoto thumb key={s.id} style={s} colors={[{body:"coffee",handle:"coffee"},{body:"milky-white",handle:"coffee",s1:"rose",s2:"coffee",s3:"rose",s4:"coffee",s5:"rose"},{body:"denim-blue",stripes:"milky-white",handle:"denim-blue"},{body:"golden-yellow",wide:"milky-white",handle:"coffee"}][i]}/>)}</a>
    </section>
 
    <section className="productionFilm" id="production-film">

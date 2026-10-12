@@ -1,8 +1,5 @@
-// KARIA V7.33 — CUSTOMIZE: 3D bag configurator + admin Customize Settings
+// KARIA V7.37 — CUSTOMIZE: configurator on the real bag photo + admin Customize Settings
 import React,{useEffect,useMemo,useRef,useState} from "react";
-import {Canvas,useFrame} from "@react-three/fiber";
-import {OrbitControls,ContactShadows} from "@react-three/drei";
-import * as THREE from "three";
 import {ArrowRight,RotateCcw,Shuffle,MousePointerClick,Check} from "lucide-react";
 import {supabase} from "./supabase";
 
@@ -48,7 +45,6 @@ export function resolveStyle(s){
  return {...s,parts,pattern};
 }
 const defaultFor=(key)=>key==="body"||key==="handle"?"coffee":"milky-white";
-const lum=hex=>{const c=new THREE.Color(hex);return .299*c.r+.587*c.g+.114*c.b};
 // Completes a color map for any style: body/handle keep their color, un-chosen stripes use the customer's accent (or a contrast of the body).
 export function fillColors(st,colors,palette,accent){
  if(!st)return colors;const out={};const find=id=>palette.find(c=>c.id===id);
@@ -81,99 +77,59 @@ export function BagSVG({style,colors={},palette=DEFAULT_COLORS,hardware="gold",c
  </svg>;
 }
 
-/* ───────────────────────── 3D BAG ───────────────────────── */
-const H=1.7,A=1.32,B=.62,N=5; // height, half-width, half-depth, superellipse roundness
-const superXY=(theta)=>{const s=Math.sin(theta),c=Math.cos(theta);return [A*Math.sign(s)*Math.pow(Math.abs(s),2/N),B*Math.sign(c)*Math.pow(Math.abs(c),2/N)]};
-const bulge=v=>1+.045*Math.sin(Math.PI*Math.min(1,v*1.05));
-function makeBodyGeometry(){
- const g=new THREE.CylinderGeometry(1,1,H,192,40,true,Math.PI,Math.PI*2); // seam at the back, u=.5 is the front
- const p=g.attributes.position;
- for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i),theta=Math.atan2(x,z),v=(y+H/2)/H,[sx,sz]=superXY(theta),k=bulge(v);p.setXYZ(i,sx*k,y,sz*k)}
- g.computeVertexNormals();return g;
+/* ───────────────────────── REAL PHOTO BAG ─────────────────────────
+   The configurator recolors the real KARIA bag photo. Three files in /public/customize, built by tools/bag-photo-segment.cjs:
+   bag-photo.jpg  the photo
+   bag-map.png    R = part (1 body, 2 handle, 3 hardware) · G = stitch row · B = stitch column
+   bag-shade.png  R = relief of the yarn (110 = flat) · G = edge softness */
+const PHOTO={w:900,h:970,rows:15,around:50,flat:110,bag:{x:120,y:30,w:660,h:860}};
+const hexRgb=hex=>{const n=parseInt(String(hex||"#999999").replace("#","").padEnd(6,"9").slice(0,6),16);return[(n>>16)&255,(n>>8)&255,n&255]};
+const lum=hex=>{const [r,g,b]=hexRgb(hex);return(.299*r+.587*g+.114*b)/255};
+let photoPromise;
+function loadPhoto(){
+ return photoPromise??=Promise.all(["bag-photo.jpg","bag-map.png","bag-shade.png"].map(f=>new Promise((ok,no)=>{const im=new Image();im.onload=()=>ok(im);im.onerror=no;im.src="/customize/"+f})))
+  .then(imgs=>{const [base,map,shade]=imgs.map(im=>{const c=document.createElement("canvas");c.width=PHOTO.w;c.height=PHOTO.h;const x=c.getContext("2d",{willReadFrequently:true});x.drawImage(im,0,0,PHOTO.w,PHOTO.h);return x.getImageData(0,0,PHOTO.w,PHOTO.h).data});return{base,map,shade}});
 }
-function makeBaseGeometry(){const sh=new THREE.Shape();for(let i=0;i<=128;i++){const [x,z]=superXY(i/128*Math.PI*2);i?sh.lineTo(x,z):sh.moveTo(x,z)}const g=new THREE.ShapeGeometry(sh,64);g.rotateX(Math.PI/2);g.translate(0,-H/2+.004,0);return g}
-function makeRimGeometry(){const pts=[];for(let i=0;i<128;i++){const [x,z]=superXY(i/128*Math.PI*2),k=bulge(1);pts.push(new THREE.Vector3(x*k,H/2,z*k))}return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts,true),256,.05,12,true)}
-const HX=.86;
-class HandleCurve extends THREE.Curve{getPoint(t,o=new THREE.Vector3()){const a=Math.PI*t;return o.set(-HX*Math.cos(a),H/2+.02+1.28*Math.pow(Math.sin(a),.8),0)}}
-function makeHandleGeometry(){return new THREE.TubeGeometry(new HandleCurve(),160,.095,18,false)}
-
-function shade(hex,amt){const c=new THREE.Color(hex);const hsl={};c.getHSL(hsl);c.setHSL(hsl.h,hsl.s,Math.max(0,Math.min(1,hsl.l+amt)));return"#"+c.getHexString()}
-function drawStitch(ctx,x,y,w,h,col,dark,light){
- ctx.fillStyle=dark;ctx.fillRect(x,y,w,h);
- ctx.fillStyle=col;
- ctx.beginPath();ctx.ellipse(x+w*.3,y+h*.52,w*.3,h*.5,-.42,0,Math.PI*2);ctx.fill();
- ctx.beginPath();ctx.ellipse(x+w*.7,y+h*.52,w*.3,h*.5,.42,0,Math.PI*2);ctx.fill();
- ctx.fillStyle=light;
- ctx.beginPath();ctx.ellipse(x+w*.27,y+h*.42,w*.1,h*.26,-.42,0,Math.PI*2);ctx.fill();
- ctx.beginPath();ctx.ellipse(x+w*.67,y+h*.42,w*.1,h*.26,.42,0,Math.PI*2);ctx.fill();
+// Part of every real stitch (row, column) for a style. Stripe styles are snapped to whole rows of the real bag,
+// so a color never cuts a stitch in half; the last row is the rim.
+function stitchParts(st){
+ const rows=PHOTO.rows,cols=PHOTO.around,wall=rows-1,out=new Array(rows*cols);
+ if((st.kind||"bands")==="bands"){
+  const bands=(st.bands||[]).filter(b=>b&&b.key),ov=(b,i)=>Math.max(0,Math.min((i+1)/wall,Number(b.to))-Math.max(i/wall,Number(b.from)));
+  const byRow=[];
+  for(let i=0;i<wall;i++){let best="body",most=0,used=0;bands.forEach(b=>{const o=ov(b,i);used+=o;if(o>most){most=o;best=b.key}});byRow.push(most>0&&most>=1/wall-used?best:"body")}
+  bands.forEach(b=>{if(byRow.includes(b.key))return;let at=-1,most=0;for(let i=0;i<wall;i++){const o=ov(b,i);if(o>most&&byRow[i]==="body"){most=o;at=i}}if(at>=0)byRow[at]=b.key}); // a thin stripe still gets its row
+  byRow.push("body");
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)out[r*cols+c]=byRow[r];
+ }else for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)out[r*cols+c]=r===wall?"body":st.pattern(Math.floor((r+.5)/wall*R),Math.floor((c+.5)/cols*C));
+ return out;
 }
-const CW=14,CH=18;
-function paintBody(canvas,st,colorOf,rowsVisible){
- const ctx=canvas.getContext("2d");ctx.clearRect(0,0,canvas.width,canvas.height);
- const cache={};const tone=k=>cache[k]||(cache[k]=(h=>[h,shade(h,-.16),shade(h,.1)])(colorOf(k)));
- for(let r=0;r<Math.min(R,rowsVisible);r++){const y=canvas.height-(r+1)*CH;for(let c=0;c<C;c++){const [a,d,l]=tone(st.pattern(r,c));drawStitch(ctx,c*CW,y,CW,CH,a,d,l)}}
+// Lays a yarn color over the photo: color × relief. Light yarn keeps softer shadows, like the real thing.
+function tint(rgb,s){const l=(.299*rgb[0]+.587*rgb[1]+.114*rgb[2])/255,k=s>1?1+(s-1)*.4:Math.pow(s,1-.78*l);return[Math.min(255,rgb[0]*k),Math.min(255,rgb[1]*k),Math.min(255,rgb[2]*k)]}
+function paintPhoto(canvas,data,st,colorOf,hardwareHex,region,step){
+ const {base,map,shade}=data,W=PHOTO.w,ow=Math.floor(region.w/step),oh=Math.floor(region.h/step);
+ canvas.width=ow;canvas.height=oh;
+ const ctx=canvas.getContext("2d"),img=ctx.createImageData(ow,oh),o=img.data;
+ const parts=stitchParts(st),keys=[...new Set(parts)],rgb=keys.map(k=>hexRgb(colorOf(k))),idx=parts.map(k=>keys.indexOf(k)),handle=hexRgb(colorOf("handle")),hw=hexRgb(hardwareHex);
+ for(let y=0,k=0;y<oh;y++)for(let x=0;x<ow;x++,k+=4){
+  const i=((region.y+y*step)*W+region.x+x*step)*4,p=map[i];let r=base[i],g=base[i+1],b=base[i+2];
+  if(p){const c=tint(p===2?handle:p===3?hw:rgb[idx[map[i+1]*PHOTO.around+map[i+2]]],shade[i]/PHOTO.flat),a=shade[i+1]/255;r+=(c[0]-r)*a;g+=(c[1]-g)*a;b+=(c[2]-b)*a}
+  o[k]=r;o[k+1]=g;o[k+2]=b;o[k+3]=255}
+ ctx.putImageData(img,0,0);
 }
-function paintMask(canvas,st,active){const ctx=canvas.getContext("2d");ctx.fillStyle="#000";ctx.fillRect(0,0,canvas.width,canvas.height);if(!active||active==="handle")return;ctx.fillStyle="#fff";for(let r=0;r<R;r++)for(let c=0;c<C;c++)if(st.pattern(r,c)===active)ctx.fillRect(c*CW,canvas.height-(r+1)*CH,CW,CH)}
-function paintBump(canvas){const ctx=canvas.getContext("2d");for(let r=0;r<R;r++)for(let c=0;c<C;c++)drawStitch(ctx,c*CW,canvas.height-(r+1)*CH,CW,CH,"#9a9a9a","#202020","#f2f2f2")}
-function paintHandle(canvas,hex){const ctx=canvas.getContext("2d");const d=shade(hex,-.16),l=shade(hex,.1);const cols=canvas.width/CW,rows=canvas.height/CH;for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)drawStitch(ctx,c*CW,r*CH,CW,CH,hex,d,l)}
-const mkTex=(cv,srgb=true)=>{const t=new THREE.CanvasTexture(cv);if(srgb)t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;return t};
-
-function Bag3D({style,colors,palette,hardware,active,buildKey,onPick,onHover}){
+// The bag itself. `thumb` draws a small close-up for style cards; the full view is the whole photo and can be tapped.
+export function BagPhoto({style,colors={},palette=DEFAULT_COLORS,hardware="gold",thumb,onPick,onHover,canvasRef,className=""}){
  const st=useMemo(()=>resolveStyle(style),[style]);
- const geo=useMemo(()=>({body:makeBodyGeometry(),base:makeBaseGeometry(),rim:makeRimGeometry(),handle:makeHandleGeometry()}),[]);
- const cv=useMemo(()=>{const mk=(w,h)=>{const c=document.createElement("canvas");c.width=w;c.height=h;return c};return{body:mk(C*CW,R*CH),mask:mk(C*CW,R*CH),bump:mk(C*CW,R*CH),handle:mk(CW*6,CH*4)}},[]);
- const tex=useMemo(()=>{paintBump(cv.bump);const handle=mkTex(cv.handle);handle.wrapS=handle.wrapT=THREE.RepeatWrapping;handle.repeat.set(9,1);return{body:mkTex(cv.body),mask:mkTex(cv.mask,false),bump:mkTex(cv.bump,false),handle}},[cv]);
- const bodyMat=useRef(),handleMat=useRef(),group=useRef(),handleGroup=useRef(),rim=useRef();
- const build=useRef({p:0,rows:0,spin:0});
- const colorOf=k=>colorFor(k,colors,palette).hex;
- const repaint=(rows)=>{paintBody(cv.body,st,colorOf,rows);tex.body.needsUpdate=true};
- // style change → the bag is "crocheted" row by row + a turn on its axis
- useEffect(()=>{build.current.p=0;build.current.rows=-1;build.current.spin+=Math.PI*2},[buildKey]);
- // colour change → instant repaint of the rows already built
- useEffect(()=>{repaint(build.current.rows<0?0:build.current.rows)},[st,colors,palette]);
- useEffect(()=>{paintHandle(cv.handle,colorOf("handle"));tex.handle.needsUpdate=true},[colors,palette]);
- useEffect(()=>{paintMask(cv.mask,st,active);tex.mask.needsUpdate=true},[st,active]);
- useFrame((state,dt)=>{
-  const b=build.current;
-  if(b.p<1.35){b.p=Math.min(1.35,b.p+dt/1.15);const rows=Math.min(R,Math.ceil(b.p*R));if(rows!==b.rows){b.rows=rows;repaint(rows)}}
-  if(rim.current)rim.current.visible=b.p>=1;
-  if(handleGroup.current){const t=THREE.MathUtils.clamp((b.p-1)/.3,0,1),e=1-Math.pow(1-t,3);handleGroup.current.scale.set(1,e,1);handleGroup.current.visible=e>.01}
-  if(group.current){group.current.rotation.y=THREE.MathUtils.lerp(group.current.rotation.y,b.spin,.06)}
-  const pulse=.1+.12*(.5+.5*Math.sin(state.clock.elapsedTime*4));
-  if(bodyMat.current)bodyMat.current.emissiveIntensity=active&&active!=="handle"?pulse:0;
-  if(handleMat.current)handleMat.current.emissiveIntensity=active==="handle"?pulse*.9:0;
- });
- const hw=HARDWARE.find(h=>h.id===hardware)||HARDWARE[0];
- const partAt=e=>{const uv=e.uv;if(!uv)return null;return st.pattern(Math.min(R-1,Math.floor(uv.y*R)),Math.min(C-1,Math.floor(uv.x*C)))};
- const click=(e,k)=>{e.stopPropagation();if(e.delta>8)return;onPick(k||partAt(e))};
- const move=(e,k)=>{e.stopPropagation();onHover(k||partAt(e));document.body.style.cursor="pointer"};
- const out=()=>{onHover(null);document.body.style.cursor=""};
- const topColor=colorOf(st.pattern(R-1,C/2)),baseColor=colorOf(st.pattern(0,C/2));
- return <group ref={group} position={[0,-.8,0]}>
-  <mesh geometry={geo.body} castShadow receiveShadow onClick={e=>click(e)} onPointerMove={e=>move(e)} onPointerOut={out}>
-   <meshStandardMaterial ref={bodyMat} map={tex.body} bumpMap={tex.bump} bumpScale={2.2} roughness={.92} metalness={0} side={THREE.DoubleSide} alphaTest={.5} emissive="#ffffff" emissiveMap={tex.mask} emissiveIntensity={0}/>
-  </mesh>
-  <mesh geometry={geo.base} receiveShadow><meshStandardMaterial color={shade(baseColor,-.05)} roughness={.95} side={THREE.DoubleSide}/></mesh>
-  <mesh ref={rim} geometry={geo.rim} castShadow onClick={e=>click(e,st.pattern(R-1,C/2))} onPointerMove={e=>move(e,st.pattern(R-1,C/2))} onPointerOut={out}><meshStandardMaterial color={topColor} bumpMap={tex.bump} bumpScale={1.2} roughness={.9}/></mesh>
-  <group ref={handleGroup} position={[0,H/2,0]}><group position={[0,-H/2,0]}>
-   <mesh geometry={geo.handle} castShadow onClick={e=>click(e,"handle")} onPointerMove={e=>move(e,"handle")} onPointerOut={out}><meshStandardMaterial ref={handleMat} map={tex.handle} bumpMap={tex.handle} bumpScale={1.5} roughness={.9} emissive="#ffffff" emissiveIntensity={0}/></mesh>
-   {[-HX,HX].map(x=><mesh key={x} position={[x,H/2+.05,0]} castShadow><torusGeometry args={[.12,.026,16,48]}/><meshStandardMaterial color={hw.hex} metalness={hw.metal} roughness={hw.rough}/></mesh>)}
-  </group></group>
- </group>;
-}
-
-function Stage({glRef,...props}){
- const [spin,setSpin]=useState(true);
- return <Canvas shadows camera={{position:[0,.7,typeof window!=="undefined"&&window.innerWidth<900?8.8:7.4],fov:34}} dpr={[1,2]} gl={{preserveDrawingBuffer:true,antialias:true,alpha:true}} onCreated={({gl})=>{glRef.current=gl}}>
-  <ambientLight intensity={.55}/>
-  <directionalLight position={[3.5,5,4]} intensity={2.1} castShadow shadow-mapSize={[1024,1024]}/>
-  <directionalLight position={[-4,2,-3]} intensity={.6} color="#ffe8cf"/>
-  <hemisphereLight args={["#fff6ea","#8a7560",.9]}/>
-  <pointLight position={[0,1.5,3.5]} intensity={6} distance={9} color="#fff1dc"/>
-  <Bag3D {...props}/>
-  <ContactShadows position={[0,-1.66,0]} opacity={.42} scale={7} blur={2.6} far={2.5}/>
-  <OrbitControls enablePan={false} minDistance={4} maxDistance={10} minPolarAngle={.35} maxPolarAngle={1.62} autoRotate={spin} autoRotateSpeed={.7} onStart={()=>setSpin(false)} target={[0,0,0]}/>
- </Canvas>;
+ const ref=useRef(),[data,setData]=useState(null);
+ useEffect(()=>{let live=true;loadPhoto().then(d=>live&&setData(d)).catch(()=>{});return()=>{live=false}},[]);
+ const parts=useMemo(()=>st?stitchParts(st):null,[st]);
+ useEffect(()=>{if(!ref.current||!data||!st)return;paintPhoto(ref.current,data,st,k=>colorFor(k,colors,palette).hex,(HARDWARE.find(h=>h.id===hardware)||HARDWARE[0]).hex,thumb?PHOTO.bag:{x:0,y:0,w:PHOTO.w,h:PHOTO.h},thumb?4:1)},[data,st,colors,palette,hardware,thumb]);
+ const partAt=e=>{if(!data||!parts)return null;const b=e.currentTarget.getBoundingClientRect(),x=Math.floor((e.clientX-b.left)/b.width*PHOTO.w),y=Math.floor((e.clientY-b.top)/b.height*PHOTO.h);if(x<0||y<0||x>=PHOTO.w||y>=PHOTO.h)return null;const i=(y*PHOTO.w+x)*4,p=data.map[i];return p===1?parts[data.map[i+1]*PHOTO.around+data.map[i+2]]:p===2?"handle":null};
+ const interactive=!thumb&&onPick;
+ return <canvas ref={el=>{ref.current=el;if(canvasRef)canvasRef.current=el}} className={`bagPhoto ${thumb?"thumb":""} ${className}`} role="img" aria-label={st?.name||"KARIA bag"}
+  onClick={interactive?e=>{const k=partAt(e);if(k)onPick(k)}:undefined}
+  onMouseMove={interactive?e=>{const k=partAt(e);onHover?.(k);e.currentTarget.style.cursor=k?"pointer":""}:undefined}
+  onMouseLeave={interactive?()=>onHover?.(null):undefined}/>;
 }
 
 /* ───────────────────────── DATA LOADING ───────────────────────── */
@@ -204,7 +160,6 @@ export function CustomizePage({Header,add}){
  const [hardware,setHardware]=useState("gold"),[accent,setAccent]=useState("coffee");
  const [active,setActive]=useState("body");
  const [hover,setHover]=useState(null);
- const [buildKey,setBuildKey]=useState(0);
  const [added,setAdded]=useState(false);
  const glRef=useRef(),colorsRef=useRef(null);
  useEffect(()=>{loadCustomizeData().then(d=>{setData(d);const first=d.styles.filter(s=>s.active!==false);if(first.length&&!first.find(s=>s.id==="triple-stripe"))setStyleId(first[0].id)})},[]);
@@ -220,12 +175,13 @@ export function CustomizePage({Header,add}){
  const cfg=data?.config||{};
  const basePrice=Number(data?.product?.price??118),price=basePrice+Number(cfg.customization_fee||0)+Number(style.extra_price||0);
  const partColor=k=>colorFor(k,filled,pal);
- const chooseStyle=id=>{if(id===styleId)return;setStyleId(id);setBuildKey(k=>k+1);setActive("body");if(window.innerWidth<900)window.scrollTo({top:0,behavior:"smooth"})};
+ const chooseStyle=id=>{if(id===styleId)return;setStyleId(id);setActive("body");if(window.innerWidth<900)window.scrollTo({top:0,behavior:"smooth"})};
  const pick=k=>{if(!k)return;setActive(k);setTimeout(()=>colorsRef.current?.querySelector(`[data-part="${k}"]`)?.scrollIntoView({behavior:"smooth",block:"nearest"}),60)};
  const setPart=(k,id)=>{setColors(c=>({...c,[k]:id}));if(k!=="body"&&k!=="handle")setAccent(id)};
  const shuffle=()=>{const pal=allowed.length?allowed:fullPalette;const next={...colors};const used=new Set();st.parts.forEach(p=>{let c;let tries=0;do{c=pal[Math.floor(Math.random()*pal.length)]}while(used.has(c.id)&&tries++<6);used.add(c.id);next[p.key]=c.id});setColors(next)};
  const reset=()=>{setColors({});setAccent("coffee")};
- const snapshot=()=>{try{const src=glRef.current?.domElement;if(!src)return"";const s=360,cv=document.createElement("canvas");cv.width=s;cv.height=s;const ctx=cv.getContext("2d");ctx.fillStyle="#efe8dd";ctx.fillRect(0,0,s,s);const sc=Math.min(s/src.width,s/src.height)*1.15,w=src.width*sc,h=src.height*sc;ctx.drawImage(src,(s-w)/2,(s-h)/2,w,h);return cv.toDataURL("image/jpeg",.82)}catch{return""}};
+ // small picture of the finished bag for the cart and checkout
+ const snapshot=()=>{try{const src=glRef.current;if(!src)return"";const s=360,cv=document.createElement("canvas");cv.width=s;cv.height=s;const ctx=cv.getContext("2d");ctx.fillStyle="#efe8dd";ctx.fillRect(0,0,s,s);const sc=s/src.height*1.04,w=src.width*sc,h=src.height*sc;ctx.drawImage(src,(s-w)/2,(s-h)/2,w,h);return cv.toDataURL("image/jpeg",.82)}catch{return""}};
  const addToCart=()=>{
   if(!data?.product){alert("Customize checkout is not configured yet. Please run the KARIA-V7.33 SQL in Supabase.");return}
   const parts={};st.parts.forEach(p=>{const c=partColor(p.key);parts[p.key]={label:p.label,color_id:c.id,color_name:c.name,hex:c.hex}});
@@ -241,14 +197,14 @@ export function CustomizePage({Header,add}){
    <section className="customizeStage">
     <div className="customizeStageHead"><small>KARIA ATELIER · MADE FOR YOU</small><h1>Create your bag.</h1></div>
     <div className="customizeCanvas">
-     <Stage glRef={glRef} style={style} colors={filled} palette={pal} hardware={hardware} active={active} buildKey={buildKey} onPick={pick} onHover={k=>setHover(h=>h===k?h:k)}/>
-     <div className="customizeHint"><MousePointerClick/>{hoverLabel?<span>Tap to color <b>{hoverLabel}</b></span>:<span>Drag to rotate · tap any part of the bag to color it</span>}</div>
+     <BagPhoto canvasRef={glRef} style={style} colors={filled} palette={pal} hardware={hardware} onPick={pick} onHover={k=>setHover(h=>h===k?h:k)}/>
+     <div className="customizeHint"><MousePointerClick/>{hoverLabel?<span>Tap to color <b>{hoverLabel}</b></span>:<span>Tap any part of the bag to color it</span>}</div>
      <div className="customizeStyleTag"><small>STYLE</small><b>{style.name}</b></div>
     </div>
    </section>
    <section className="customizePanel">
     <div className="customizeStep"><div className="customizeStepHead"><span>01</span><div><small>CHOOSE YOUR STYLE</small><h2>{styles.length} designs</h2></div></div>
-     <div className="styleGrid">{styles.map((s,i)=><button key={s.id} className={`styleCard ${s.id===style.id?"active":""}`} onClick={()=>chooseStyle(s.id)}><BagSVG style={s} colors={fillColors(resolveStyle(s),colors,fullPalette,accent)} palette={fullPalette} hardware={hardware}/><span className="styleNum">{i+1}</span><b>{s.name}</b><small>{s.sub||""}</small>{Number(s.extra_price||0)>0&&<em>+${Number(s.extra_price).toFixed(2)}</em>}</button>)}</div>
+     <div className="styleGrid">{styles.map((s,i)=><button key={s.id} className={`styleCard ${s.id===style.id?"active":""}`} onClick={()=>chooseStyle(s.id)}><BagPhoto thumb style={s} colors={fillColors(resolveStyle(s),colors,fullPalette,accent)} palette={fullPalette} hardware={hardware}/><span className="styleNum">{i+1}</span><b>{s.name}</b><small>{s.sub||""}</small>{Number(s.extra_price||0)>0&&<em>+${Number(s.extra_price).toFixed(2)}</em>}</button>)}</div>
     </div>
     <div className="customizeStep" ref={colorsRef}><div className="customizeStepHead"><span>02</span><div><small>CHOOSE YOUR COLORS</small><h2>{st.parts.length} parts to color</h2></div><div className="customizeTools"><button onClick={shuffle} title="Surprise me"><Shuffle/></button><button onClick={reset} title="Reset colors"><RotateCcw/></button></div></div>
      <div className="partList">{st.parts.map(p=>{const c=partColor(p.key),open=active===p.key;return <div className={`partRow ${open?"open":""}`} key={p.key} data-part={p.key}>

@@ -1,0 +1,14 @@
+KARIA V7.37 - CUSTOMIZE ON THE REAL BAG PHOTO
+
+The 3D sample bag is gone. Customize now shows the real KARIA bag photo and recolors it:
+- body, every stripe, handle and hardware rings change color on the photo itself
+- stripes follow the real stitch rows of the bag
+- tap a part of the bag to pick its color
+- style cards and the home page teaser use the same real photo
+- the picture saved in the bag / checkout is the recolored photo
+
+Files: public/customize/bag-photo.jpg, bag-map.png, bag-shade.png
+To use another photo: edit the measurements at the top of tools/bag-photo-segment.cjs
+and run it (needs the "sharp" package): node tools/bag-photo-segment.cjs <photo> public/customize
+
+No SQL needed. The site no longer loads the 3D library, so pages are lighter.

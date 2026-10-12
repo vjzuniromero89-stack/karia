@@ -733,6 +733,15 @@ html:has(.customizePage){overflow-y:auto}
 .catalogBuy button:disabled,.productAdd:disabled{opacity:.45;cursor:not-allowed}
 .cartNotice{margin:0 0 12px;padding:10px 12px;border:1px solid #d8cbb9;background:#f6efe5;border-radius:8px;font-size:12px;line-height:1.4}
 
+/* KARIA V7.37 — Customize on the real bag photo */
+.customizeCanvas{touch-action:auto;display:flex;align-items:center;justify-content:center;padding:14px 4vw 64px;overflow:hidden}
+.bagPhoto{display:block;max-width:100%;max-height:100%;height:auto;width:auto;aspect-ratio:900/970;border-radius:18px;box-shadow:0 24px 60px #4a2a1c22}
+.customizeCanvas .bagPhoto{width:auto;height:auto;max-width:100%;max-height:100%}
+.bagPhoto.thumb{width:100%;height:auto;aspect-ratio:660/860;border-radius:10px;box-shadow:none}
+.customizeTeaserArt .bagPhoto{border-radius:18px;transition:transform .4s}
+.customizeTeaserArt .bagPhoto:nth-child(2),.customizeTeaserArt .bagPhoto:nth-child(4){transform:translateY(28px)}
+.customizeTeaserArt:hover .bagPhoto{transform:translateY(-6px)}
+
 /* KARIA V7.36 — storefront reorganization */
 nav a.current{border-bottom:1px solid currentColor;padding-bottom:4px}
 .shopChips{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 28px}
