@@ -172,3 +172,22 @@ html.noir .noirSplit h2{font-size:clamp(34px,4.4vw,56px)!important;margin:0!impo
   html.noir .productPage{padding-left:20px!important;padding-right:20px!important}
 }
 @media (prefers-reduced-motion:reduce){.noirSlide,.noirFlowItem{transition:none!important}}
+
+/* V7.51 — split hero: text left, the full photo right (3:2 like the photos, never cropped) */
+.noirHeroSplit{height:auto;min-height:0;display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);align-items:center;gap:clamp(28px,4vw,72px);padding:118px max(24px,5vw) 64px;overflow:visible}
+.noirHeroSplit .noirHeroText{position:static;padding:0;max-width:none}
+html.noir .noirHeroSplit .noirHeroText h1{font-size:clamp(44px,5.6vw,96px)!important}
+.noirStage{position:relative;aspect-ratio:3/2;width:100%;overflow:hidden;background:var(--n-bg2);box-shadow:0 40px 80px rgba(0,0,0,.45)}
+.noirStage .noirSlide::after{display:none}
+.noirStage .noirSlide img{object-fit:cover;object-position:center}
+.noirStageName{position:absolute;left:18px;bottom:18px;z-index:3;font:400 13px var(--n-sans);letter-spacing:.18em;text-transform:uppercase;color:#1b1916;background:rgba(239,233,223,.86);padding:7px 12px}
+.noirHeroSplit .noirHeroNav{right:16px;bottom:14px;left:auto}
+.noirHeroSplit .noirHeroNav span{background:rgba(15,14,13,.55);padding:4px 10px}
+@media (max-width:850px){
+  .noirHeroSplit{grid-template-columns:1fr;padding:92px 16px 48px;gap:26px}
+  .noirHeroSplit .noirStage{order:-1}
+  .noirHeroSplit .noirHeroNav{left:auto;right:10px;bottom:10px}
+  .noirStageName{left:10px;bottom:12px;font-size:11px}
+}
+@media (max-width:520px){.noirStageName{display:none}}
+@media (max-width:850px){.noirHeroSplit .noirHeroNav{gap:8px;bottom:8px;right:8px}.noirHeroSplit .noirHeroNav button{width:36px;height:36px}.noirHeroSplit .noirHeroNav span{font-size:11px;padding:3px 7px}}

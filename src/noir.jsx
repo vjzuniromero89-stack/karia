@@ -16,10 +16,14 @@ function Hero({products}){
  const [i,setI]=useState(0);
  const go=d=>setI(n=>(n+d+slides.length)%slides.length);
  useEffect(()=>{if(slides.length<2||reduceMotion())return;const t=setInterval(()=>setI(n=>(n+1)%slides.length),5600);return()=>clearInterval(t)},[slides.length,i]);
- return <section className="noirHero" aria-label="Featured bags">
-  {slides.map((p,n)=><div key={p.id} className={`noirSlide${n===i?" on":""}`} aria-hidden={n!==i}><img src={p.img} alt={n===i?p.name:""} fetchPriority={n===0?"high":"auto"}/></div>)}
+ // Text on the left, the whole photo on the right: the frame has the photos' own 3:2 shape, so no bag is ever cropped.
+ return <section className="noirHero noirHeroSplit" aria-label="Featured bags">
   <div className="noirHeroText"><small>Hand-crocheted · Limited pieces</small><h1>Made slowly, <i>worn</i> every day.</h1><p>Each KARIA bag is crocheted by hand, stripe by stripe, and finished with gold-tone rings.</p><a className="noirBtn" href="/shop">Shop the collection <ArrowRight/></a></div>
-  {slides.length>1&&<div className="noirHeroNav"><button aria-label="Previous photo" onClick={()=>go(-1)}><ArrowLeft/></button><span><b>{String(i+1).padStart(2,"0")}</b> / {String(slides.length).padStart(2,"0")}</span><button aria-label="Next photo" onClick={()=>go(1)}><ArrowRight/></button></div>}
+  <div className="noirStage">
+   {slides.map((p,n)=><a key={p.id} href={`/product/${p.id}`} className={`noirSlide${n===i?" on":""}`} aria-hidden={n!==i} tabIndex={n===i?0:-1}><img src={p.img} alt={n===i?p.name:""} fetchPriority={n===0?"high":"auto"}/></a>)}
+   <span className="noirStageName">{slides[i]?.name}</span>
+   {slides.length>1&&<div className="noirHeroNav"><button aria-label="Previous photo" onClick={()=>go(-1)}><ArrowLeft/></button><span><b>{String(i+1).padStart(2,"0")}</b> / {String(slides.length).padStart(2,"0")}</span><button aria-label="Next photo" onClick={()=>go(1)}><ArrowRight/></button></div>}
+  </div>
  </section>
 }
 
