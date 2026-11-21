@@ -881,3 +881,12 @@ nav .menuOnly{display:none}
 .shipInfo small{font-size:12.5px;opacity:.7}
 .shipOpt strong{font-weight:500;white-space:nowrap;font-variant-numeric:tabular-nums}
 .shipNote{font-size:12px;opacity:.65;margin:0}
+
+/* KARIA V7.68 — address suggestions under the Address field */
+.addrWrap{position:relative}
+.addrList{position:absolute;left:0;right:0;top:100%;z-index:30;list-style:none;margin:4px 0 0;padding:4px 0;background:#fbf9f5;border:1px solid #66594b;box-shadow:0 10px 24px rgba(0,0,0,.18);text-transform:none;letter-spacing:0}
+.addrList li{display:grid;gap:2px;padding:10px 14px;cursor:pointer;font:400 14px/1.35 Inter,Arial,sans-serif}
+.addrList li span{font-size:12.5px;opacity:.65}
+.addrList li.on,.addrList li:hover{background:rgba(102,89,75,.12)}
+.addrList li.addrCredit{cursor:default;font-size:10.5px;opacity:.55;padding:6px 14px 4px;text-align:right}
+.addrList li.addrCredit:hover{background:none}

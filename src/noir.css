@@ -554,3 +554,10 @@ html.noir .shipOpt.on .shipDot::after{background:var(--n-gold)}
 html.noir .shipOpt:focus-within{outline-color:var(--n-gold)}
 html.noir .shipInfo small{color:var(--n-mut);opacity:1}
 html.noir .shipNote{color:var(--n-mut);opacity:1}
+
+/* KARIA V7.68 — address suggestions (Noir) */
+html.noir .addrList{background:#1b1814;border-color:var(--n-gold);box-shadow:0 12px 28px rgba(0,0,0,.5)}
+html.noir .addrList li{font:300 15px/1.35 var(--n-sans)!important;color:var(--n-fg);text-transform:none!important;letter-spacing:0!important}
+html.noir .addrList li span{color:var(--n-mut);opacity:1}
+html.noir .addrList li.on,html.noir .addrList li:hover{background:#26211b}
+html.noir .addrList li.addrCredit{font-size:11px!important;color:var(--n-mut)}
