@@ -104,7 +104,9 @@ Deno.serve(async(req)=>{
   const method:any=methods.length?(shipping_method?methods.find((m:any)=>m.id===shipping_method):methods[0]):null;
   if(methods.length&&!method)throw new UserError("That shipping option is no longer available. Please choose another.");
   const freeOver=Number(rule.free_shipping_over||0);
-  const base=method?Number(method.price||0):Number(rule.default_rate||0);
+  // extra_each: each bag after the first ships in its own box, so faster options charge it per extra bag (Express +$36, V7.67)
+  const units=lines.reduce((a:number,l:any)=>a+l.quantity,0);
+  const base=method?Number(method.price||0)+Math.max(0,Number(method.extra_each||0))*Math.max(0,units-1):Number(rule.default_rate||0);
   // the free-shipping amount only applies to the first (standard) option
   const shipping=freeOver>0&&afterDiscount>=freeOver&&(!method||method===methods[0])?0:money(Math.max(0,base));
   const shipName=method?[method.name,method.service].filter(Boolean).map(String).join(" · ").slice(0,80):null;

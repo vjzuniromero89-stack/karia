@@ -531,20 +531,22 @@ const orderDeletable=o=>String(o?.status||'pending').toLowerCase()==='pending'||
 // Settings → box and weight per style (rows saved as shipping.styles = [{name,l,w,h,lb}]).
 // Settings → shipping options shown at checkout (shipping.methods); create-checkout charges the price saved here.
 // Days are the carriers' published standards (USPS FAQ, UPS), checked 2026-11-21.
-const SHIP_DEFAULTS=[{id:'standard',name:'Standard',service:'USPS Ground Advantage',days:'2–5 business days',price:0},{id:'priority',name:'Priority',service:'USPS Priority Mail',days:'1–3 business days',price:16},{id:'express',name:'Express',service:'UPS 2nd Day Air',days:'2 business days',price:48}];
+// extra_each = charged for every bag after the first (one box per bag), so Express covers each label
+const SHIP_DEFAULTS=[{id:'standard',name:'Standard',service:'USPS Ground Advantage',days:'2–5 business days',price:0,extra_each:0},{id:'priority',name:'Priority',service:'USPS Priority Mail',days:'1–3 business days',price:16,extra_each:0},{id:'express',name:'Express',service:'UPS 2nd Day Air',days:'2 business days',price:48,extra_each:36}];
 function ShipMethods({initial}){
  const rows=SHIP_DEFAULTS.map(d=>({...d,...((Array.isArray(initial)?initial:[]).find(m=>m.id===d.id)||{})}));
- return <div className="kTableWrap"><table className="kTable"><thead><tr><th>Option</th><th>Carrier service</th><th>Delivery time</th><th>Price ($)</th><th>Show</th></tr></thead><tbody>
+ return <div className="kTableWrap"><table className="kTable"><thead><tr><th>Option</th><th>Carrier service</th><th>Delivery time</th><th>Price ($)</th><th>Each extra bag ($)</th><th>Show</th></tr></thead><tbody>
   {rows.map((r,i)=><tr key={r.id}>
    <td><input name={`ship_name_${i}`} defaultValue={r.name} aria-label="Option name" required/></td>
    <td><input name={`ship_service_${i}`} defaultValue={r.service} aria-label="Carrier service"/></td>
    <td><input name={`ship_days_${i}`} defaultValue={r.days} aria-label="Delivery time"/></td>
    <td><input name={`ship_price_${i}`} type="number" step="0.01" min="0" defaultValue={r.price} aria-label="Price"/></td>
+   <td><input name={`ship_extra_${i}`} type="number" step="0.01" min="0" defaultValue={r.extra_each??0} aria-label="Each extra bag"/></td>
    <td>{i===0?<span className="kNote">Always</span>:<input type="checkbox" name={`ship_on_${i}`} defaultChecked={r.active!==false} aria-label={`Show ${r.name}`}/>}</td></tr>)}
  </tbody></table></div>;
 }
 // default_rate mirrors Standard for older code; free_shipping_over goes to 0 because shipping is in the bag price now
-const shipMethodsFrom=f=>{const methods=SHIP_DEFAULTS.map((d,i)=>({id:d.id,name:String(f[`ship_name_${i}`]||d.name).trim(),service:String(f[`ship_service_${i}`]||'').trim(),days:String(f[`ship_days_${i}`]||'').trim(),price:Math.max(0,Number(f[`ship_price_${i}`]||0)),active:i===0||f[`ship_on_${i}`]==='on'}));return {methods,default_rate:methods[0].price,free_shipping_over:0}};
+const shipMethodsFrom=f=>{const methods=SHIP_DEFAULTS.map((d,i)=>({id:d.id,name:String(f[`ship_name_${i}`]||d.name).trim(),service:String(f[`ship_service_${i}`]||'').trim(),days:String(f[`ship_days_${i}`]||'').trim(),price:Math.max(0,Number(f[`ship_price_${i}`]||0)),extra_each:Math.max(0,Number(f[`ship_extra_${i}`]||0)),active:i===0||f[`ship_on_${i}`]==='on'}));return {methods,default_rate:methods[0].price,free_shipping_over:0}};
 // 400 g bag + 270 g box = 670 g = 1.48 lb (owners' numbers, 2026-11-21)
 const STYLE_DEFAULTS=[{name:'Amelia',l:30,w:26,h:15,lb:1.48},{name:'Aurora',l:30,w:26,h:15,lb:1.48}];
 function StyleBoxes({initial,setNotice}){
