@@ -6,3 +6,6 @@ set name = 'Amelia Bag · ' || regexp_replace(name, '\s+Stripe Bag$', '', 'i')
 where name ~* '\s+Stripe Bag$';
 
 select sku, name from public.products order by sku;
+
+-- Aurora = the style with the plastic (resin) handles. Today only the Camel tote is an Aurora.
+update public.products set name = 'Aurora Bag · Camel' where sku = 'k14' and name = 'Camel Crochet Tote';
