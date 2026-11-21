@@ -1,0 +1,27 @@
+﻿KARIA V7.52 — admin redesign + readable store pages (2026-11-21)
+
+ADMIN (approved prototype)
+- Readable type: Inter at 14–15px, dark ink, color only where it means something.
+  - Status colors: paid green, shipped blue, delivered violet, pending amber, refunded red.
+  - Stock pills: sold out, few left, in stock.
+- Menu groups, in this order:
+  - Today: Dashboard
+  - Sales: Orders, Customers, Messages, Reviews
+  - Catalog: Products, Inventory, Categories & brands
+  - Marketing: Coupons, Newsletter
+  - Money: Accounting
+  - Store: Settings, Team
+- Changes by tab:
+  - Dashboard: "To do today" list.
+  - Orders: status chips, "+ Add tracking" and the Pirate Ship export.
+  - Products: cards, plus a 4-step "New product" drawer.
+  - Newsletter: new tab.
+  - Accounting: 50/50 partner split.
+  - Customize: hidden from the menu.
+  - "Admin users" is now called "Team".
+
+STORE (Noir)
+- Shop: bigger labels, chip counts, search and sort. Sold-out buttons are readable (dashed outline, light text).
+- About: story, a photo strip of three bags, three values, and links.
+- Contact: info card with orders, shipping, returns and business name.
+- Reviews: a designed empty state.

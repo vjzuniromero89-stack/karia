@@ -122,7 +122,7 @@ function App(){
  else if(path==="/reviews")page=<ReviewsPage Header={Header} products={shopProducts} {...rev}/>;
  else if(path==="/orders")page=<OrdersPage user={user} Header={Header} onSignIn={signIn}/>;
  else if(path==="/contact")page=<ContactPage Header={Header} info={storefront}/>;
- else if(path==="/about")page=<AboutPage Header={Header} info={storefront}/>;
+ else if(path==="/about")page=<AboutPage Header={Header} info={storefront} products={shopProducts}/>;
  else if(path.startsWith("/product/"))page=<ProductPage {...shop} {...rev} loaded={loaded} id={decodeURIComponent(path.split("/").pop())}/>;
  else page=theme==='noir'?<NoirHome Header={Header} products={shopProducts} add={add} loaded={loaded}/>:<HomePage Header={Header} storeProducts={storeProducts}/>;
  // Bag, account and password panels live here so they work on every page (checkout included).

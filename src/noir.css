@@ -191,3 +191,55 @@ html.noir .noirHeroSplit .noirHeroText h1{font-size:clamp(44px,5.6vw,96px)!impor
 }
 @media (max-width:520px){.noirStageName{display:none}}
 @media (max-width:850px){.noirHeroSplit .noirHeroNav{gap:8px;bottom:8px;right:8px}.noirHeroSplit .noirHeroNav button{width:36px;height:36px}.noirHeroSplit .noirHeroNav span{font-size:11px;padding:3px 7px}}
+
+/* V7.52 — readable store pages: no tiny labels, no dark-on-dark buttons */
+html.noir .catalogHero small,html.noir .catalogContext small,html.noir .productInfo small,html.noir .accountEyebrow,html.noir .contactInfo span{font-size:12px!important;letter-spacing:.22em!important;font-family:var(--n-sans)!important}
+html.noir .catalogContext h2{font-size:clamp(34px,3.6vw,48px)!important}
+html.noir .catalogContext>span,html.noir .catalogContext span{font-size:14px!important;letter-spacing:.04em!important;color:var(--n-soft)!important;font-family:var(--n-sans)!important}
+html.noir .catalogHero p{font-size:18px!important;color:var(--n-soft)!important}
+html.noir .shopChips button{font:500 14px var(--n-sans)!important;letter-spacing:.04em!important;padding:12px 18px!important;color:var(--n-fg)!important;border-color:#4a443c!important}
+html.noir .shopChips button b{font-size:13px!important;font-weight:600!important;color:#0f0e0d!important;background:var(--n-gold);border-radius:999px;padding:1px 8px;opacity:1!important}
+html.noir .shopChips button.active b{background:#0f0e0d;color:var(--n-fg)!important}
+html.noir .catalogTools{border-color:var(--n-line)!important;padding:14px 0!important;gap:12px!important}
+html.noir .catalogTools input,html.noir .catalogTools select{font:400 16px var(--n-sans)!important;padding:14px 16px!important;border:1px solid #3a352f!important;color:var(--n-fg)!important;background:var(--n-bg2)!important}
+html.noir .catalogTools select option{background:var(--n-bg2);color:var(--n-fg)}
+html.noir .catalogCard small{font-size:12px!important;letter-spacing:.16em!important;margin-top:16px!important}
+html.noir .catalogCard h2{font-size:24px!important;margin:8px 0 14px!important}
+html.noir .catalogBuy{padding-top:14px!important;gap:12px}
+html.noir .catalogBuy b,html.noir .priceSale b{font-size:18px!important}
+html.noir .catalogBuy button{font:500 12px var(--n-sans)!important;letter-spacing:.16em!important;padding:12px 18px!important;border:1px solid var(--n-fg)!important;color:var(--n-fg)!important;opacity:1!important;min-height:44px}
+html.noir .catalogBuy button:hover:not(:disabled){background:var(--n-fg)!important;color:#0f0e0d!important}
+html.noir .catalogBuy button:disabled,html.noir .productAdd:disabled{background:transparent!important;border:1px dashed #6e665c!important;color:#c9bfb2!important;opacity:1!important}
+html.noir .newBadge{font:600 11px var(--n-sans)!important;letter-spacing:.18em!important}
+/* forms (contact, checkout, reviews) */
+html.noir .checkoutForm label{font:500 13px var(--n-sans)!important;letter-spacing:.08em!important;color:var(--n-soft)!important;text-transform:uppercase}
+html.noir .checkoutForm input,html.noir .checkoutForm textarea,html.noir .checkoutForm select{font:400 16px var(--n-sans)!important;padding:13px 14px!important;margin-top:8px}
+html.noir .checkoutForm h2{font-size:30px!important}
+/* reviews */
+html.noir .reviewEmpty{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:34px!important;min-height:200px;justify-content:center}
+html.noir .reviewEmpty b{font:400 24px var(--n-serif);color:var(--n-fg)}
+html.noir .reviewEmpty span{font-size:15px;color:var(--n-soft)}
+html.noir .reviewItem p{font-size:17px!important;line-height:1.7;color:var(--n-fg)!important}
+html.noir .reviewHint{font-size:15px!important;color:var(--n-soft)!important}
+/* contact */
+html.noir .contactInfo{background:var(--n-bg2);border:1px solid var(--n-line);padding:26px!important;gap:0!important;align-self:start}
+html.noir .contactInfo>small{display:block;margin-bottom:10px}
+html.noir .contactInfo div{border-top:1px solid var(--n-line)!important;padding:16px 0!important;gap:6px!important}
+html.noir .contactInfo a,html.noir .contactBiz{font:400 17px var(--n-sans)!important;color:var(--n-fg)!important;text-decoration:none}
+html.noir .contactInfo a:hover{color:var(--n-gold)!important}
+/* about */
+.aboutMain{max-width:1180px;margin:0 auto}
+html.noir .aboutMain .aboutText{max-width:760px}
+html.noir .aboutMain .aboutText p{font-size:19px!important;line-height:1.75}
+.aboutStrip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin:46px 0}
+.aboutStrip a{display:block;text-decoration:none;color:inherit}
+.aboutStrip img{width:100%;aspect-ratio:3/2;object-fit:cover;display:block}
+.aboutStrip span{display:block;margin-top:10px;font-size:14px;letter-spacing:.12em;text-transform:uppercase}
+.aboutValues{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin:10px 0 40px}
+.aboutValues div{border-top:1px solid #cfc2b2;padding-top:18px}
+html.noir .aboutValues div{border-color:var(--n-line)}
+.aboutValues b{font:400 24px var(--n-serif,Georgia,serif)}
+html.noir .aboutValues b{color:var(--n-gold)}
+.aboutValues p{margin:8px 0 0;font-size:16px;line-height:1.65}
+.aboutActions{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+@media (max-width:850px){.aboutStrip,.aboutValues{grid-template-columns:1fr}}

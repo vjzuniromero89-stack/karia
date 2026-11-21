@@ -143,7 +143,7 @@ function ReviewForm({products,productId,user,onSignIn,onSaved}){
   <button className="checkoutPay" disabled={state==="busy"}>{state==="busy"?"SENDING…":"PUBLISH REVIEW"} <ArrowRight/></button></form>
 }
 function ReviewList({reviews,products,showProduct,empty}){
- if(!reviews.length)return <div className="catalogEmpty">{empty}</div>;
+ if(!reviews.length)return <div className="catalogEmpty reviewEmpty"><Stars value={0} size={22}/><b>{empty}</b><span>Reviews come from customers who bought a KARIA bag.</span></div>;
  const name=id=>products.find(p=>p.id===id)?.name;
  return <div className="reviewList">{reviews.map(r=><article className="reviewItem" key={r.id}>
   <div className="reviewTop"><Stars value={r.rating} size={16}/><span>{r.created_at?new Date(r.created_at).toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"}):""}</span></div>
@@ -211,16 +211,27 @@ export function ContactPage({Header,info={}}){
     {wa&&<div><span>WHATSAPP</span><a href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer">{info.whatsapp}</a></div>}
     {ig&&<div><span>INSTAGRAM</span><a href={`https://instagram.com/${ig}`} target="_blank" rel="noreferrer">@{ig}</a></div>}
     <div><span>YOUR ORDERS</span><a href="/orders">Check status and tracking</a></div>
+    <div><span>SHIPPING</span><a href="/shipping">Rates and delivery</a></div>
+    <div><span>RETURNS</span><a href="/returns">Returns & refunds</a></div>
+    <div><span>BUSINESS</span><b className="contactBiz">Karia Shop LLC</b></div>
    </aside>
   </div></main></div>
 }
 
 const ABOUT_DEFAULT=["KARIA makes handmade crochet bags, stitch by stitch, in small batches.","Our handmade bags are crocheted by hand in small batches."+(CUSTOMIZE_ON?" With KARIA Atelier you can design your own: pick a style, choose every color, and we make it just for you.":"")];
-export function AboutPage({Header,info={}}){
+export function AboutPage({Header,info={},products=[]}){
  const text=String(info.about||"").split(/\n+/).map(s=>s.trim()).filter(Boolean);
- return <div className="catalogPage">{Header}<main className="catalogMain narrowMain"><div className="catalogHero"><small>OUR STORY</small><h1>About KARIA.</h1></div>
+ // three bags in stock first, for the photo strip
+ const pics=[...products].sort((a,b)=>soldOut(a)-soldOut(b)).slice(0,3);
+ return <div className="catalogPage">{Header}<main className="catalogMain aboutMain"><div className="catalogHero"><small>OUR STORY</small><h1>About KARIA.</h1></div>
   <div className="aboutText">{(text.length?text:ABOUT_DEFAULT).map((t,i)=><p key={i}>{t}</p>)}</div>
-  <div className="aboutActions"><a className="cta" href="/shop">SHOP KARIA <ArrowRight/></a>{CUSTOMIZE_ON&&<a className="cta" href="/customize">CREATE YOUR BAG <ArrowRight/></a>}</div>
+  {pics.length>0&&<div className="aboutStrip">{pics.map(p=><a key={p.id} href={`/product/${p.id}`}><img src={p.thumb||p.img} alt={p.name} loading="lazy"/><span>{p.name}</span></a>)}</div>}
+  <div className="aboutValues">
+   <div><b>Made by hand</b><p>Every bag is crocheted stitch by stitch in thick cotton cord. No machines, no shortcuts.</p></div>
+   <div><b>Small batches</b><p>We make a few pieces of each color at a time, so every bag gets full attention.</p></div>
+   <div><b>Made to last</b><p>Tight stitches, a wrapped handle and gold-tone rings, built for everyday use.</p></div>
+  </div>
+  <div className="aboutActions"><a className="cta" href="/shop">SHOP KARIA <ArrowRight/></a>{CUSTOMIZE_ON&&<a className="cta" href="/customize">CREATE YOUR BAG <ArrowRight/></a>}<a className="dashLink" href="/contact">CONTACT US</a></div>
  </main></div>
 }
 

@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 /* KARIA admin additions (V7.49 audit). Base admin styles live in style.css. */
 .admin .adminToast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:100001;margin:0;display:flex;align-items:flex-start;gap:12px;width:max-content;max-width:min(640px,calc(100vw - 24px));font-size:13px;line-height:1.45;box-shadow:0 12px 40px rgba(0,0,0,.22)}
 .admin .adminToast span{flex:1;min-width:0}
@@ -12,17 +13,10 @@
 .autoTag{font-size:10px;letter-spacing:.06em;color:#756a5e;white-space:nowrap}
 .statusNote{grid-column:1/-1;margin:0;padding:10px 12px;border-radius:10px;background:#fff4e5;border:1px solid #f0c98a;font-size:13px}
 .adminSearch{width:100%;max-width:420px;min-height:44px;padding:0 14px;border:1px solid #d6c5b0;border-radius:10px;background:#fff;margin:0 0 12px;font-size:14px}
-.orderFilters{display:grid;gap:10px;margin-bottom:6px}
-.chipRow{display:flex;gap:8px;flex-wrap:wrap}
-.chip{min-height:38px;padding:0 14px;border-radius:999px;border:1px solid #d6c5b0;background:#fff;cursor:pointer;font-size:11px;letter-spacing:.04em}
-.chip.on{background:#211d18;color:#f6efe5;border-color:#211d18}
 .filePreview{grid-column:1/-1;display:flex;gap:10px;flex-wrap:wrap}
 .filePreview figure{margin:0;width:96px}
 .filePreview img,.filePreview video{width:96px;height:96px;object-fit:cover;border-radius:10px;display:block;background:#eee}
 .filePreview figcaption{font-size:10px;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.inlineQty{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
-.inlineQty label{display:flex;flex-direction:column;font-size:11px;gap:4px}
-.inlineQty input{width:90px;min-height:40px;padding:0 10px}
 .inlineEdit{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;align-items:end;padding:8px 0}
 .inlineEdit .rowActionButtons{grid-column:1/-1}
 .inlineEdit input,.inlineEdit textarea{min-height:40px;padding:8px 10px}
@@ -43,4 +37,209 @@
  .adminConfirm button{flex:1}
  .photoGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
-.shipExport{display:flex;flex-direction:column;align-items:flex-end;gap:6px;max-width:320px}.shipExport button{background:#211d18;color:#fff;border:0;padding:12px 16px;letter-spacing:.12em;font-size:12px;cursor:pointer}.shipExport small{font-size:11px;color:#6f6b64;text-align:right}@media(max-width:850px){.shipExport{align-items:flex-start;max-width:none}.shipExport small{text-align:left}}
+
+/* ============ KARIA admin redesign (approved prototype karia-admin.html) ============
+   Everything below is scoped to .admin.kAdmin so it never touches the public store,
+   and is specific enough to win over the old admin rules in style.css. */
+.admin.kAdmin{
+ --side:#181613;--side2:#25221e;--sidefg:#f2ede5;--sidemut:#b9aea0;--gold:#c8a46a;
+ --bg:#f5f3ef;--card:#fff;--ink:#1b1916;--ink2:#4a443c;--line:#e4dfd7;--soft:#f0ece5;
+ --green:#1f7a4d;--greenbg:#e3f3ea;--blue:#2457c5;--bluebg:#e5ecfb;--amber:#a76300;--amberbg:#fdf0da;--red:#b4362a;--redbg:#fbe6e3;--violet:#6b43b8;--violetbg:#efe8fb;--grey:#5e5850;--greybg:#eeebe6;
+ --k-sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;--k-serif:"Bodoni Moda",Georgia,serif;
+ display:grid!important;grid-template-columns:248px minmax(0,1fr)!important;min-height:100vh;background:var(--bg)!important;color:var(--ink);font-size:15px;line-height:1.5}
+.admin.kAdmin,.admin.kAdmin *{font-family:var(--k-sans)!important}
+.admin.kAdmin :focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+
+/* Sidebar */
+.admin.kAdmin .kSide{background:var(--side)!important;color:var(--sidefg);padding:22px 14px!important;position:sticky;top:0;height:100vh;overflow:auto;display:flex!important;flex-direction:column!important;gap:2px!important;scrollbar-width:thin;scrollbar-color:#3a352f transparent}
+.admin.kAdmin .kSide .kBrand{font:600 24px/1.2 var(--k-serif)!important;letter-spacing:.3em;padding:0 10px;color:var(--sidefg)}
+.admin.kAdmin .kSide .kBrandSub{display:block;color:var(--sidemut)!important;font-size:12px!important;letter-spacing:.08em!important;margin:0!important;padding:4px 10px 8px}
+.admin.kAdmin .kSide .kGrp{display:block;font-style:normal;font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);padding:14px 10px 4px}
+.admin.kAdmin .kSide .kNav{display:flex!important;align-items:center;gap:10px;width:100%;background:none;border:0;color:var(--sidefg)!important;padding:8px 12px!important;border-radius:10px!important;font-size:15px!important;font-weight:500;text-align:left;cursor:pointer;min-height:40px}
+.admin.kAdmin .kSide .kNav:hover{background:var(--side2)}
+.admin.kAdmin .kSide .kNav[aria-current="page"]{background:var(--sidefg);color:#181613!important;font-weight:600}
+.admin.kAdmin .kSide .kNav svg{width:18px;height:18px;flex:none;opacity:.9}
+.admin.kAdmin .kSide .kCnt{margin-left:auto;background:var(--gold);color:#181613;font-size:12px;font-weight:700;border-radius:999px;padding:1px 8px;line-height:1.5}
+.admin.kAdmin .kSide .kNav[aria-current="page"] .kCnt{background:#181613;color:var(--sidefg)}
+.admin.kAdmin .kSide .kBack{margin-top:18px;color:var(--sidemut)!important}
+
+/* Work area */
+.admin.kAdmin .kMain{padding:28px 32px 60px;min-width:0}
+.admin.kAdmin .kTop{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.admin.kAdmin .kTop small{color:var(--ink2);font-size:13px;font-weight:500}
+.admin.kAdmin .kTop h1{font:600 34px/1.1 var(--k-serif)!important;margin:4px 0 0;letter-spacing:0;color:var(--ink)}
+.admin.kAdmin .kExport{display:flex;flex-direction:column;align-items:flex-end;gap:6px;max-width:330px}
+.admin.kAdmin .kExport small{font-size:13px;font-weight:400;text-align:right}
+.admin.kAdmin .kRow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.admin.kAdmin .kRow.between{justify-content:space-between}
+.admin.kAdmin .kRow.end{justify-content:flex-end}
+.admin.kAdmin .kRow.nowrap{flex-wrap:nowrap}
+.admin.kAdmin .grow{flex:1;min-width:0}
+.admin.kAdmin .kH2{font-size:18px;font-weight:700;margin:4px 0 10px;color:var(--ink);letter-spacing:0}
+.admin.kAdmin .kSub{color:var(--ink2);font-size:14px;margin:0 0 14px}
+.admin.kAdmin .kNote{color:var(--ink2);font-size:14px}
+.admin.kAdmin .kGreen{color:var(--green)}.admin.kAdmin .kRed{color:var(--red)}
+
+/* Buttons */
+.admin.kAdmin .kBtn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:10px 16px;font-weight:600;font-size:14px;letter-spacing:0;cursor:pointer;min-height:42px;text-decoration:none;white-space:nowrap;text-transform:none}
+.admin.kAdmin .kBtn:hover{border-color:var(--ink2)}
+.admin.kAdmin .kBtn.pri{background:var(--ink);color:#fff;border-color:var(--ink)}
+.admin.kAdmin .kBtn.sm{padding:6px 12px;min-height:34px;font-size:13px}
+.admin.kAdmin .kBtn.danger{color:var(--red);border-color:#ebc3bd}
+.admin.kAdmin .kBtn:disabled{opacity:.5;cursor:default}
+.admin.kAdmin .kSelect{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px 14px;font-weight:600;font-size:14px;min-height:42px;width:auto!important}
+
+/* Cards, KPIs, grids */
+.admin.kAdmin .kGrid{display:grid;gap:16px;margin-bottom:16px}
+.admin.kAdmin .kGrid.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.admin.kAdmin .kGrid.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.admin.kAdmin .kGrid.g2{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+.admin.kAdmin .kCard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;min-width:0;margin-bottom:16px}
+.admin.kAdmin .kGrid>.kCard{margin-bottom:0}
+.admin.kAdmin .kCard h2{font-size:18px;font-weight:700;margin:0 0 4px;color:var(--ink);letter-spacing:0;line-height:1.3}
+.admin.kAdmin .kEmpty{color:var(--ink2);font-size:15px}
+.admin.kAdmin .kKpi small{display:block;color:var(--ink2);font-size:13px;font-weight:600}
+.admin.kAdmin .kKpi b{display:block;font-size:30px;font-weight:700;margin:6px 0 2px;font-variant-numeric:tabular-nums;line-height:1.15}
+.admin.kAdmin .kKpi b.green{color:var(--green)}.admin.kAdmin .kKpi b.red{color:var(--red)}
+.admin.kAdmin .kKpi span{font-size:13px;color:var(--ink2)}
+
+/* To do */
+.admin.kAdmin .kTodos{display:grid;gap:10px;margin-bottom:16px}
+.admin.kAdmin .kTodo{display:flex;gap:14px;align-items:center;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--card)}
+.admin.kAdmin .kTodo b{display:block;font-size:16px}
+.admin.kAdmin .kTodo span{display:block;color:var(--ink2);font-size:14px}
+.admin.kAdmin .kDot{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;flex:none;font-size:20px}
+.admin.kAdmin .kDot svg{width:20px;height:20px}
+
+/* Status colors */
+.admin.kAdmin .kPill{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;border-radius:999px;padding:3px 10px;white-space:nowrap;line-height:1.5}
+.admin.kAdmin .kPill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.admin.kAdmin :is(.kPill,.kDot).green{color:var(--green);background:var(--greenbg)}
+.admin.kAdmin :is(.kPill,.kDot).blue{color:var(--blue);background:var(--bluebg)}
+.admin.kAdmin :is(.kPill,.kDot).violet{color:var(--violet);background:var(--violetbg)}
+.admin.kAdmin :is(.kPill,.kDot).amber{color:var(--amber);background:var(--amberbg)}
+.admin.kAdmin :is(.kPill,.kDot).red{color:var(--red);background:var(--redbg)}
+.admin.kAdmin :is(.kPill,.kDot).grey{color:var(--grey);background:var(--greybg)}
+.admin.kAdmin .kStock{display:inline-block;font-weight:700;font-variant-numeric:tabular-nums;border-radius:8px;padding:3px 10px;font-size:14px;white-space:nowrap}
+.admin.kAdmin .kStock.s0{color:var(--red);background:var(--redbg)}
+.admin.kAdmin .kStock.slow{color:var(--amber);background:var(--amberbg)}
+.admin.kAdmin .kStock.sok{color:var(--green);background:var(--greenbg)}
+
+/* Tables */
+.admin.kAdmin .kTable{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--card);margin-bottom:16px}
+.admin.kAdmin .kTable.flat{border-radius:10px;margin:0}
+.admin.kAdmin .kTable table{width:100%;border-collapse:collapse;min-width:640px;font-size:15px}
+.admin.kAdmin .kTable th{font-size:13px!important;font-weight:600!important;color:var(--ink2);text-align:left;padding:12px 14px;background:var(--soft);border-bottom:1px solid var(--line);white-space:nowrap;text-transform:none;letter-spacing:0;max-width:none}
+.admin.kAdmin .kTable td{padding:12px 14px;border-bottom:1px solid var(--line);font-size:15px;vertical-align:middle;color:var(--ink);max-width:none;overflow:visible;white-space:normal}
+.admin.kAdmin .kTable tr:last-child td{border-bottom:0}
+.admin.kAdmin .kTable :is(td,th).num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.admin.kAdmin .kWho b{display:block}
+.admin.kAdmin .kWho span{display:block;color:var(--ink2);font-size:13px}
+.admin.kAdmin .kThumbs{display:flex;gap:6px;align-items:center}
+.admin.kAdmin .kThumb{width:48px;height:48px!important;border-radius:10px;object-fit:cover;background:var(--soft);display:inline-grid;place-items:center;font-size:11px;font-weight:600;color:var(--ink2);flex:none}
+.admin.kAdmin .kTrack{display:inline-block;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;font-size:14px;font-variant-numeric:tabular-nums}
+
+/* Chips + search */
+.admin.kAdmin .kChips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.admin.kAdmin .kChip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:7px 14px;font-size:14px;font-weight:500;letter-spacing:0;cursor:pointer;min-height:38px}
+.admin.kAdmin .kChip[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.admin.kAdmin .kChip i{font-style:normal;opacity:.7;margin-left:6px}
+.admin.kAdmin input.kSearch{flex:1 1 260px;width:auto!important;min-width:min(260px,100%);margin:0}
+
+/* Form fields (also the old caField labels, inline edits and modals) */
+.admin.kAdmin .caField{display:flex;flex-direction:column;gap:6px;font-size:14px!important;font-weight:600;color:var(--ink)!important;margin:0;letter-spacing:0;text-transform:none}
+.admin.kAdmin .caField small{font-weight:400;color:var(--ink2);font-size:13px}
+.admin.kAdmin .caField small.fieldWarn{color:var(--red);font-weight:600}
+.admin.kAdmin :is(.kMain,.kPanel) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea){border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;font-weight:400;font-size:15px;color:var(--ink);min-height:42px;width:100%;min-width:0}
+.admin.kAdmin :is(.kMain,.kPanel) textarea{resize:vertical;line-height:1.45}
+.admin.kAdmin .kForm{display:grid;gap:12px}
+.admin.kAdmin .kForm h2,.admin.kAdmin .kForm .kSub{margin:0}
+.admin.kAdmin .kFields{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;align-items:end}
+.admin.kAdmin .kTwo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+.admin.kAdmin .kInline{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.admin.kAdmin .kInline>input{flex:1 1 150px;width:auto!important}
+.admin.kAdmin .kInline>input[type="number"]{flex:0 1 130px}
+.admin.kAdmin .kCheck{display:flex;gap:10px;align-items:center;font-size:15px;font-weight:500}
+.admin.kAdmin .kCheck input{width:18px;height:18px;margin:0}
+
+/* List rows inside cards */
+.admin.kAdmin .kLine{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.admin.kAdmin .kLine:last-child{border-bottom:0}
+.admin.kAdmin .kLine>div.grow{flex:1 1 220px;min-width:0}
+.admin.kAdmin .kLine .grow>span{display:block}
+.admin.kAdmin .kLine.kForm{display:grid}
+.admin.kAdmin .kLine.kStrong{font-size:17px;border-top:2px solid var(--ink)}
+
+/* Product cards */
+.admin.kAdmin .kPcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+.admin.kAdmin .kPcard{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.admin.kAdmin .kPcard>img,.admin.kAdmin .kNoPhoto{width:100%;aspect-ratio:4/3;height:auto;object-fit:cover;display:grid;place-items:center;background:var(--soft);color:var(--ink2);font-size:13px}
+.admin.kAdmin .kPcard .b{padding:12px 14px;display:grid;gap:8px}
+.admin.kAdmin .kPcard h3{font-size:15px;font-weight:700;margin:0;line-height:1.3;letter-spacing:0}
+.admin.kAdmin .kPcard .kNote{font-size:13px}
+.admin.kAdmin .kMeta{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.admin.kAdmin .kMeta>span>b{font-size:16px}
+
+/* New product drawer */
+.admin.kAdmin .kDrawer{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;justify-content:flex-end;z-index:9000}
+.admin.kAdmin .kPanel{background:var(--card);width:min(560px,100%);height:100%;overflow:auto;padding:24px}
+.admin.kAdmin .kPanel h2{font:600 26px/1.2 var(--k-serif)!important;margin:0;letter-spacing:0}
+.admin.kAdmin .kStep{border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:14px;display:grid;gap:12px}
+.admin.kAdmin .kStep h3{font-size:15px;font-weight:700;margin:0;display:flex;gap:10px;align-items:center;letter-spacing:0}
+.admin.kAdmin .kStep h3 span{width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:13px}
+.admin.kAdmin .kDrop{border:2px dashed var(--line);border-radius:12px;padding:18px;text-align:center;color:var(--ink2);display:grid;gap:6px;cursor:pointer;font-size:14px}
+.admin.kAdmin .kDrop b{color:var(--ink);font-size:15px}
+.admin.kAdmin .kDrop input{justify-self:center;max-width:100%;min-width:0}
+.admin.kAdmin .kStep>*,.admin.kAdmin .kDrop{min-width:0}
+
+/* Messages, bars, charts */
+.admin.kAdmin .kMsg{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--line);flex-wrap:wrap;align-items:flex-start}
+.admin.kAdmin .kMsg:first-child{padding-top:0}
+.admin.kAdmin .kMsg:last-child{border-bottom:0;padding-bottom:0}
+.admin.kAdmin .kMsg .grow{min-width:220px}
+.admin.kAdmin .kMsg p{margin:4px 0 0;white-space:pre-wrap;font-size:15px;color:var(--ink)}
+.admin.kAdmin .kAv{width:40px;height:40px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-weight:700;flex:none}
+.admin.kAdmin .kNew{width:9px;height:9px;border-radius:50%;background:var(--blue);display:inline-block;margin-right:6px;vertical-align:middle}
+.admin.kAdmin .kCode{font-size:20px;letter-spacing:.06em;flex:1}
+.admin.kAdmin .kBar{height:8px;background:var(--soft);border-radius:99px;overflow:hidden;margin-top:4px}
+.admin.kAdmin .kBar i{display:block;height:100%;background:var(--gold)}
+.admin.kAdmin .kCard .kBar+.kNote{margin:6px 0 12px}
+.admin.kAdmin .kCard>.kNote:has(+.kRow){margin:6px 0 12px}
+.admin.kAdmin .kSplit{display:flex;height:16px;border-radius:99px;overflow:hidden;margin:10px 0}
+.admin.kAdmin .kSplit i{flex:1;background:var(--gold)}
+.admin.kAdmin .kSplit i+i{background:var(--ink)}
+.admin.kAdmin .kChart{display:flex;align-items:flex-end;gap:6px;height:150px;padding-top:10px}
+.admin.kAdmin .kChart i{flex:1;background:var(--gold);border-radius:6px 6px 0 0;min-height:3px}
+.admin.kAdmin .kChart i:last-child{background:var(--ink)}
+.admin.kAdmin .kAxis{display:flex;justify-content:space-between;color:var(--ink2);font-size:12px;margin-top:6px}
+
+/* Toast and the existing modals, made readable */
+.admin.kAdmin .adminToast{background:var(--ink);color:#fff;border:0;font-size:14px;border-radius:12px}
+.admin.kAdmin .editModal small,.admin.kAdmin .photoManagerHead{font-size:12px!important;letter-spacing:.06em!important;color:var(--ink2)}
+.admin.kAdmin .editModal label{font-size:14px!important;color:var(--ink)!important;font-weight:600}
+.admin.kAdmin .editModal :is(input,select,textarea){font-size:15px!important;font-weight:400;color:var(--ink)}
+.admin.kAdmin .editModalHead h2{font-family:var(--k-serif)!important;font-weight:600}
+.admin.kAdmin .editModal .kPill{margin-top:6px}
+
+/* Phone: the sidebar becomes a scrolling bar */
+@media(max-width:900px){
+ .admin.kAdmin{display:block!important}
+ .admin.kAdmin .kSide{position:sticky!important;top:0;z-index:50;height:auto;flex-direction:row!important;align-items:center;overflow-x:auto;padding:10px 12px!important;gap:6px!important}
+ .admin.kAdmin .kSide :is(.kBrandSub,.kGrp){display:none!important}
+ .admin.kAdmin .kSide .kBrand{font-size:18px!important;padding:0 8px 0 0;flex:none}
+ .admin.kAdmin .kSide .kNav{width:auto;white-space:nowrap;padding:8px 12px!important;flex:none;min-height:40px}
+ .admin.kAdmin .kSide .kBack{margin-top:0}
+ .admin.kAdmin .kMain{padding:20px 16px 60px}
+ .admin.kAdmin .kTop h1{font-size:28px!important}
+ .admin.kAdmin .kExport{align-items:flex-start;max-width:none}
+ .admin.kAdmin .kExport small{text-align:left}
+ .admin.kAdmin .kGrid.g4{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .admin.kAdmin :is(.kGrid.g3,.kGrid.g2,.kTwo){grid-template-columns:minmax(0,1fr)}
+ .admin.kAdmin .kKpi b{font-size:24px}
+ .admin.kAdmin .kTable td{white-space:nowrap}
+ .admin.kAdmin .kTodo{flex-wrap:wrap}
+ .admin.kAdmin .kTodo .grow{flex:1 1 calc(100% - 58px)}
+ .admin.kAdmin .kTodo .kBtn{width:100%}
+ .admin.kAdmin .kPcards{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+ .admin.kAdmin .kPanel{padding:18px 16px}
+}
