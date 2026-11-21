@@ -1,8 +1,8 @@
 // KARIA admin panel (moved out of main.jsx in V7.49 so the store loads it only when an admin opens it).
 import React,{useEffect,useMemo,useRef,useState} from "react";
-import {ShoppingBag,Package,Wallet,Users,Boxes,BarChart3,Settings,Tag,LayoutGrid,UserCog,Mail,Star,Send,Images} from "lucide-react";
+import {ShoppingBag,Package,Wallet,Users,Boxes,BarChart3,Settings,Tag,LayoutGrid,UserCog,Mail,Star,Send,Images,RotateCcw} from "lucide-react";
 import {supabase} from "./supabase";
-import {Stars,mainPhoto} from "./storefront";
+import {Stars,mainPhoto,kariaPaysReturn} from "./storefront";
 import {CustomizeAdmin,CustomizationSheet,CUSTOM_SKU} from "./customize";
 import "./admin.css";
 
@@ -16,7 +16,7 @@ const money=n=>{const v=Number(n||0);return `${v<0?'−':''}$${Math.abs(v).toFix
 const plural=(n,w)=>`${n} ${w}${n===1?'':'s'}`;
 const shortDay=v=>v?new Date(v).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
 // Menu in the order of the owners' day. Badges are added for Orders, Messages and Products.
-const NAV=[['Today',[['Dashboard',BarChart3]]],['Sales',[['Orders',ShoppingBag],['Customers',Users],['Messages',Mail],['Reviews',Star]]],['Catalog',[['Products',Package],['Photos',Images],['Inventory',Boxes],['Categories & brands',LayoutGrid]]],['Marketing',[['Coupons',Tag],['Newsletter',Send]]],['Money',[['Accounting',Wallet]]],['Store',[['Settings',Settings],['Team',UserCog]]]];
+const NAV=[['Today',[['Dashboard',BarChart3]]],['Sales',[['Orders',ShoppingBag],['Returns',RotateCcw],['Customers',Users],['Messages',Mail],['Reviews',Star]]],['Catalog',[['Products',Package],['Photos',Images],['Inventory',Boxes],['Categories & brands',LayoutGrid]]],['Marketing',[['Coupons',Tag],['Newsletter',Send]]],['Money',[['Accounting',Wallet]]],['Store',[['Settings',Settings],['Team',UserCog]]]];
 const STATUS_TONE={paid:'green',processing:'green',shipped:'blue',delivered:'violet',pending:'amber',cancelled:'red',refunded:'red'};
 const StatusPill=({s})=>{const k=String(s||'pending').toLowerCase();return <span className={`kPill ${STATUS_TONE[k]||'grey'}`}>{k[0].toUpperCase()+k.slice(1)}</span>};
 const StockPill=({n})=><span className={`kStock ${n<=0?'s0':n<=2?'slow':'sok'}`}>{n<=0?'Sold out':`${n} left`}</span>;
@@ -101,7 +101,7 @@ function Admin({back}){
  const [accountingSales,setAccountingSales]=useState([]),[accountingExpenses,setAccountingExpenses]=useState([]),[period,setPeriod]=useState('30');
  const [settingsValues,setSettingsValues]=useState({}),[customerOrders,setCustomerOrders]=useState([]),[subscribers,setSubscribers]=useState([]);
  const [stockById,setStockById]=useState({}),[couponUses,setCouponUses]=useState({}),[productDraft,setProductDraft]=useState(null),[pickedFiles,setPickedFiles]=useState([]),[uploadStep,setUploadStep]=useState(''),[openingQty,setOpeningQty]=useState(''),[ask,setAsk]=useState(null);
- const [libPicks,setLibPicks]=useState([]),[pickerOpen,setPickerOpen]=useState(false);
+ const [libPicks,setLibPicks]=useState([]),[pickerOpen,setPickerOpen]=useState(false),[returnsLite,setReturnsLite]=useState([]);
  const photosDirty=useRef(false),productFormRef=useRef(null);
  // A pasted image (Ctrl+V / Cmd+V) while the New product drawer is open joins its photo list like a chosen file.
  useEffect(()=>{if(!newOpen)return;const onPaste=e=>{const files=clipboardImages(e);if(!files.length)return;e.preventDefault();setPickedFiles(p=>[...p,...files]);setNotice(`${plural(files.length,'pasted photo')} added to the new product.`)};window.addEventListener('paste',onPaste);return()=>window.removeEventListener('paste',onPaste)},[newOpen]);
@@ -173,11 +173,11 @@ function Admin({back}){
  },[accountingSales,accountingExpenses,period]);
  // load() keeps the current notice so "Saved…" messages survive the reload; switching tabs clears it.
  const load=async()=>{if(!supabase)return;setLoading(true);try{
-  const table={Orders:'orders',Products:'products','Categories & brands':'categories',Inventory:'inventory_movements',Customers:'profiles',Accounting:'expenses',Team:'profiles',Coupons:'coupons',Messages:'contact_messages',Reviews:'product_reviews'}[tab];
-  if(table){let q=tab==='Orders'?supabase.from('orders').select('id,order_number,email,status,subtotal,discount,discount_total,shipping,shipping_total,coupon_code,tax,total,processor_fee,shipping_address,tracking_number,carrier,created_at,stripe_session_id,stripe_payment_intent,order_items(id,product_id,qty,unit_price,unit_cost,customization,products(id,name,sku,description,weight,product_media(url,media_type,sort_order)))').order('created_at',{ascending:false}).limit(1000):tab==='Inventory'?supabase.from('inventory_movements').select('*, products(name,sku)').order('created_at',{ascending:false}).limit(100):tab==='Categories & brands'?supabase.from('categories').select('*').order('name',{ascending:true}).limit(100):tab==='Products'?supabase.from('products').select('id,name,sku,description,price,compare_at_price,unit_cost,category,brand_id,materials,dimensions,weight,low_stock_threshold,featured,active,created_at,product_media(url,media_type,sort_order)').order('created_at',{ascending:false}).limit(100):supabase.from(table).select('*').order('created_at',{ascending:false}).limit(100);if(tab==='Team')q=q.in('role',['staff','admin','super_admin']);const {data,error}=await q;if(error)throw error;setRows(data||[])}
+  const table={Orders:'orders',Products:'products','Categories & brands':'categories',Inventory:'inventory_movements',Customers:'profiles',Accounting:'expenses',Team:'profiles',Coupons:'coupons',Messages:'contact_messages',Reviews:'product_reviews',Returns:'return_requests'}[tab];
+  if(table){let q=tab==='Returns'?supabase.from('return_requests').select(RETURN_SELECT).order('created_at',{ascending:false}).limit(500):tab==='Orders'?supabase.from('orders').select('id,order_number,email,status,subtotal,discount,discount_total,shipping,shipping_total,coupon_code,tax,total,processor_fee,shipping_address,tracking_number,carrier,created_at,stripe_session_id,stripe_payment_intent,order_items(id,product_id,qty,unit_price,unit_cost,customization,products(id,name,sku,description,weight,product_media(url,media_type,sort_order)))').order('created_at',{ascending:false}).limit(1000):tab==='Inventory'?supabase.from('inventory_movements').select('*, products(name,sku)').order('created_at',{ascending:false}).limit(100):tab==='Categories & brands'?supabase.from('categories').select('*').order('name',{ascending:true}).limit(100):tab==='Products'?supabase.from('products').select('id,name,sku,description,price,compare_at_price,unit_cost,category,brand_id,materials,dimensions,weight,low_stock_threshold,featured,active,created_at,product_media(url,media_type,sort_order)').order('created_at',{ascending:false}).limit(100):supabase.from(table).select('*').order('created_at',{ascending:false}).limit(100);if(tab==='Team')q=q.in('role',['staff','admin','super_admin']);const {data,error}=await q;if(error)throw error;setRows(data||[])}
   // Orders, stock and this week's messages feed the dashboard and the menu badges on every tab.
-  const [{data:o},{data:ps},{data:st,error:se},{data:cm}]=await Promise.all([supabase.from('orders').select('id,order_number,email,customer_id,total,status,created_at,coupon_code,subtotal,discount,discount_total,shipping,shipping_total,processor_fee,tracking_number,shipping_address,order_items(product_id,qty,unit_cost)').order('created_at',{ascending:false}),supabase.from('products').select('id,name,sku,low_stock_threshold,product_media(url,media_type,sort_order)').eq('active',true),supabase.from('product_stock').select('*'),supabase.from('contact_messages').select('id,name,message,created_at').gte('created_at',new Date(Date.now()-7*864e5).toISOString()).order('created_at',{ascending:false})]);
-  if(se)throw se;
+  const [{data:o},{data:ps},{data:st,error:se},{data:cm},{data:rr}]=await Promise.all([supabase.from('orders').select('id,order_number,email,customer_id,total,status,created_at,coupon_code,subtotal,discount,discount_total,shipping,shipping_total,processor_fee,tracking_number,shipping_address,order_items(product_id,qty,unit_cost)').order('created_at',{ascending:false}),supabase.from('products').select('id,name,sku,low_stock_threshold,product_media(url,media_type,sort_order)').eq('active',true),supabase.from('product_stock').select('*'),supabase.from('contact_messages').select('id,name,message,created_at').gte('created_at',new Date(Date.now()-7*864e5).toISOString()).order('created_at',{ascending:false}),supabase.from('return_requests').select('id,order_id,status')]);
+  if(se)throw se;setReturnsLite(rr||[]);
   const stock=Object.fromEntries((st||[]).map(r=>[r.product_id,Number(r.stock??r.quantity??r.qty??0)]));
   setCustomerOrders(o||[]);setStockById(stock);setRecentMessages(cm||[]);setActiveProducts((ps||[]).filter(p=>p.sku!==CUSTOM_SKU).map(p=>({...p,stock:stock[p.id]||0})));
   if(tab==='Categories & brands'){const {data,error}=await supabase.from('brands').select('*').order('name');if(error)throw error;setBrandRows(data||[])}
@@ -354,7 +354,7 @@ function Admin({back}){
  // Sidebar badges: paid orders still without tracking, contact messages of the last 7 days (there is no read flag), active bags at 0.
  const toShip=customerOrders.filter(o=>['paid','processing'].includes(stOf(o))&&!o.tracking_number);
  const soldOut=activeProducts.filter(p=>p.stock<=0);
- const badges={Orders:toShip.length,Messages:recentMessages.length,Products:soldOut.length};
+ const badges={Orders:toShip.length,Returns:returnsLite.filter(r=>['requested','received'].includes(r.status)).length,Messages:recentMessages.length,Products:soldOut.length};
  const who=o=>o.shipping_address?.full_name||o.email||'Customer';
  const copyEmails=async()=>{
   const text=subscribers.map(s=>s.email).join(', '),done=`Copied ${plural(subscribers.length,'email')}. Paste them in the BCC field of your email.`;
@@ -382,7 +382,8 @@ function Admin({back}){
     <div className="kGrid g2"><div className="kCard"><h2>Sales by day</h2><p className="kSub">Last 14 days, paid orders</p><div className="kChart">{days.map(d=><i key={d} style={{height:`${Math.max(2,byDay[d]/top*100)}%`}} title={`${shortDay(`${d}T12:00:00`)} · ${money(byDay[d])}`}/>)}</div><div className="kAxis"><span>{shortDay(`${days[0]}T12:00:00`)}</span><span>Today</span></div></div>
      <div className="kCard"><h2>Best sellers</h2><p className="kSub">Bags sold, last 30 days</p>{best.length?best.map(({p,q})=><div className="kLine" key={p.id}>{mainPhoto(p.product_media)?<img className="kThumb" src={mainPhoto(p.product_media)} alt=""/>:<span className="kThumb"/>}<b className="grow">{p.name}</b><span className="kNote">{q} sold</span><StockPill n={p.stock}/></div>):<p className="kNote">No sales in the last 30 days.</p>}</div></div></>;
   }
-  if(tab==='Orders')return <><Head eyebrow="Sales" title="Orders"><div className="kExport"><button type="button" className="kBtn pri" onClick={()=>setNotice(exportPirateShip(rows))}>⇩ Export for Pirate Ship</button><small>Paid orders without tracking. Upload the file in Pirate Ship → Ship → Upload a spreadsheet.</small></div></Head><OrderAdminTable rows={rows} onView={setViewingOrder} onDelete={deleteOrder}/></>;
+  if(tab==='Orders')return <><Head eyebrow="Sales" title="Orders"><div className="kExport"><button type="button" className="kBtn pri" onClick={()=>setNotice(exportPirateShip(rows))}>⇩ Export for Pirate Ship</button><small>Paid orders without tracking. Upload the file in Pirate Ship → Ship → Upload a spreadsheet.</small></div></Head><OrderAdminTable rows={rows} returns={returnsLite} onView={setViewingOrder} onDelete={deleteOrder}/></>;
+  if(tab==='Returns')return <><Head eyebrow="Sales" title="Returns"/><ReturnsAdmin rows={rows} canRefund={['admin','super_admin'].includes(currentAdmin?.role)} setNotice={setNotice} setAsk={setAsk} reload={load}/></>;
   if(tab==='Customers')return <><Head eyebrow="Sales" title="Customers"/><CustomerTable profiles={rows} orders={customerOrders} subscribers={subscribers}/></>;
   if(tab==='Messages'){const week=Date.now()-7*864e5;return <><Head eyebrow="Sales" title="Messages"/><p className="kSub">Messages customers send from the Contact page. Reply opens your email app.</p>{rows.length?<div className="kCard">{rows.map(r=><div className="kMsg" key={r.id}><div className="kAv" aria-hidden="true">{String(r.name||'?').trim().charAt(0).toUpperCase()}</div><div className="grow"><b>{new Date(r.created_at)>=week&&<span className="kNew" title="This week"/>}{r.name}</b> <span className="kNote">{r.email} · {r.created_at?new Date(r.created_at).toLocaleString():''}</span><p>{r.message}</p></div><div className="kRow"><a className="kBtn sm" href={'mailto:'+r.email+'?subject='+encodeURIComponent('KARIA — your message')}>Reply by email</a><button type="button" className="kBtn sm danger" onClick={()=>deleteMessage(r)}>Delete</button></div></div>)}</div>:<div className="kCard kEmpty">No messages yet.</div>}</>}
   if(tab==='Reviews')return <><Head eyebrow="Sales" title="Reviews"/><p className="kSub">Reviews are published as soon as a customer sends them. Hide one to take it off the store without deleting it.</p><ReviewList rows={rows} products={productsList} onToggle={toggleReview} onDelete={deleteReview}/></>;
@@ -442,6 +443,80 @@ function Admin({back}){
 {editingMovement&&<div className="editModalBackdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setEditingMovement(null)}}><div className="editModal inventoryEditModal"><div className="editModalHead"><div><small>EDIT INVENTORY MOVEMENT</small><h2>{editingMovement.products?.name||'Inventory entry'}</h2></div><button type="button" onClick={()=>setEditingMovement(null)}>×</button></div><form className="editModalForm" onSubmit={saveMovementEdit}><label className="full">Product<select name="product_id" defaultValue={editingMovement.product_id||''} required>{productsList.map(p=><option key={p.id} value={p.id}>{p.name} · {p.sku}</option>)}{editingMovement.product_id&&!productsList.some(p=>p.id===editingMovement.product_id)&&<option value={editingMovement.product_id}>{editingMovement.products?.name||'Product'} · {editingMovement.products?.sku||''} (archived)</option>}</select></label><label>Quantity<input name="qty" type="number" defaultValue={editingMovement.qty??editingMovement.quantity??''} required/></label><label>Movement type<select name="movement_type" defaultValue={editingMovement.movement_type||'ADJUST'}><option value="IN">IN / RECEIVED</option><option value="OUT">OUT</option><option value="RETURN">RETURN</option><option value="ADJUST">ADJUSTMENT</option><option value="PRODUCTION_IN">PRODUCTION IN</option></select></label><label className="full">Reason / reference<textarea name="note" defaultValue={String(editingMovement.note||'').replace(/^OPENING STOCK\s*[·-]?\s*/i,'')}/></label><div className="editModalActions full"><button type="button" onClick={()=>setEditingMovement(null)}>CANCEL</button><button type="submit">SAVE MOVEMENT</button></div></form></div></div>}
 </div>
 }
+/* ───────────── RETURNS (V7.58) ─────────────
+   requested → approved (return label tracking) → received → refunded (Edge Function refund-return), or declined. */
+const RETURN_SELECT='id,order_id,customer_id,status,items,reason,note,photo_paths,return_tracking,refund_amount,refund_shipping,stripe_refund_id,history,created_at,updated_at,orders(id,order_number,email,status,subtotal,discount,discount_total,shipping,shipping_total,total,created_at,shipping_address,order_items(id,product_id,qty,unit_price,customization,products(name,product_media(url,media_type,sort_order))))';
+const RETURN_LABEL={requested:'Requested',approved:'Approved',received:'Bag received',refunded:'Refunded',declined:'Declined'};
+const RETURN_TONE={requested:'amber',approved:'blue',received:'violet',refunded:'green',declined:'red'};
+const RETURN_CHIPS=[['review','To review',['requested']],['wait','Waiting for bag',['approved']],['refund','To refund',['received']],['done','Done',['refunded','declined']]];
+const chipOf=s=>(RETURN_CHIPS.find(c=>c[2].includes(s))||RETURN_CHIPS[0])[0];
+// Same money rule as the refund-return function: order-line prices, coupon shared in proportion, capped at what is left.
+function returnMoney(r,all){
+ const o=r.orders||{},lines=o.order_items||[];
+ const items=(r.items||[]).map(x=>{const it=lines.find(l=>l.id===x.order_item_id);return {...x,it,qty:it?Math.min(Number(x.qty)||1,Number(it.qty)):Number(x.qty)||1,unit_price:it?Number(it.unit_price):Number(x.unit_price||0)}});
+ const gross=items.reduce((s,x)=>s+x.qty*x.unit_price,0),subtotal=Number(o.subtotal)||lines.reduce((s,l)=>s+Number(l.qty)*Number(l.unit_price),0);
+ const net=gross-(subtotal>0?Number(o.discount_total??o.discount??0)*gross/subtotal:0),ship=Number(o.shipping_total??o.shipping??0);
+ const left=Number(o.total||0)-all.filter(x=>x.order_id===r.order_id&&x.status==='refunded'&&x.id!==r.id).reduce((s,x)=>s+Number(x.refund_amount||0),0);
+ const total=withShip=>Math.max(0,Math.round(Math.min(net+(withShip?ship:0),left)*100)/100);
+ return {items,net,ship,total};
+}
+function ReturnsAdmin({rows,canRefund,setNotice,setAsk,reload}){
+ const [chip,setChip]=useState(()=>(RETURN_CHIPS.find(c=>rows.some(r=>c[2].includes(r.status)))||RETURN_CHIPS[0])[0]);
+ const [selId,setSelId]=useState(null),[busy,setBusy]=useState(false),[photos,setPhotos]=useState([]),[trk,setTrk]=useState(''),[refundOpen,setRefundOpen]=useState(false),[withShip,setWithShip]=useState(false);
+ const list=rows.filter(r=>RETURN_CHIPS.find(c=>c[0]===chip)[2].includes(r.status));
+ const sel=list.find(r=>r.id===selId)||list[0]||null;
+ useEffect(()=>{setTrk(sel?.return_tracking||'');setPhotos([]);setRefundOpen(false);setWithShip(false);
+  if(!sel?.photo_paths?.length)return;let live=true;
+  Promise.all(sel.photo_paths.map(p=>supabase.storage.from('return-photos').createSignedUrl(p,3600))).then(rs=>{if(live)setPhotos(rs.map(x=>x.data?.signedUrl).filter(Boolean))});
+  return()=>{live=false}},[sel?.id,sel?.status]);
+ useEffect(()=>{if(!refundOpen)return;const f=e=>{if(e.key==='Escape')setRefundOpen(false)};addEventListener('keydown',f);return()=>removeEventListener('keydown',f)},[refundOpen]);
+ const who=r=>r.orders?.shipping_address?.full_name||r.orders?.email||'Customer';
+ const num=r=>r.orders?.order_number??'—';
+ // .eq('status', …) so two admins can never move the same return twice
+ const save=async(r,patch,msg)=>{setBusy(true);setNotice('');try{
+   const {data,error}=await supabase.from('return_requests').update(patch).eq('id',r.id).eq('status',r.status).select('id');
+   if(error)throw error;if(!data?.length)throw new Error('The return was not updated: it changed in the meantime or the Returns SQL (V7.58) is missing. Reload and try again.');
+   setNotice(msg);if(patch.status){setChip(chipOf(patch.status));setSelId(r.id)}await reload();
+  }catch(e){setNotice(e.message)}finally{setBusy(false)}};
+ const approve=r=>setAsk({text:`Approve the return for order #${num(r)}? Then create the return label in Pirate Ship and paste its tracking number here.`,yes:'APPROVE',run:()=>save(r,{status:'approved'},`Return for order #${num(r)} approved. Create the return label in Pirate Ship and paste the tracking number.`)});
+ const decline=r=>setAsk({text:`Decline the return for order #${num(r)}? The customer sees "Declined" in My orders. Email them the reason.`,yes:'DECLINE RETURN',run:()=>save(r,{status:'declined'},`Return for order #${num(r)} declined. Email the customer the reason.`)});
+ const received=r=>setAsk({text:`Mark the bag of order #${num(r)} as received? Do it once the bag is in your hands and you checked it.`,yes:'BAG RECEIVED',run:()=>save(r,{status:'received',return_tracking:trk.trim()||r.return_tracking||null},`Bag received for order #${num(r)}. Next: refund it in Stripe.`)});
+ const refund=async r=>{setBusy(true);setNotice('');try{
+   const {data,error}=await supabase.functions.invoke('refund-return',{body:{return_id:r.id,include_shipping:withShip}});
+   let msg=data?.error;if(error){msg=error.message;try{const b=await error.context?.json?.();msg=b?.error||msg}catch{}}
+   if(error||!data?.ok)throw new Error(msg||'The refund could not be sent.');
+   setRefundOpen(false);setNotice(`Refunded ${money(data.amount)} in Stripe (${data.refund_id}). Stock is back.${data.order_refunded?` Order #${num(r)} is now REFUNDED.`:''}`);setChip('done');setSelId(r.id);await reload();
+  }catch(e){setNotice(e.message)}finally{setBusy(false)}};
+ const counts=Object.fromEntries(RETURN_CHIPS.map(c=>[c[0],rows.filter(r=>c[2].includes(r.status)).length]));
+ const m=sel&&returnMoney(sel,rows),free=sel&&kariaPaysReturn(sel.reason),st=sel?.status;
+ const thumb=x=>{const ph=x.it&&!x.it.customization?mainPhoto(x.it.products?.product_media):'';return ph?<img className="kThumb" src={ph} alt=""/>:<span className="kThumb">{x.it?.customization?'Custom':'—'}</span>};
+ return <><p className="kSub">Customers ask for returns in My orders. Approve, send the return label, mark the bag received, then refund in Stripe. Stock goes back with the refund.</p>
+  <div className="kChips">{RETURN_CHIPS.map(([k,label])=><button type="button" key={k} className="kChip" aria-pressed={chip===k} onClick={()=>{setChip(k);setSelId(null)}}>{label}<i>{counts[k]}</i></button>)}</div>
+  {!rows.length?<div className="kCard kEmpty">No return requests yet. They appear here when a customer asks for one in My orders.</div>:
+  <div className="kRetLay"><div className="kRetList">{list.length?list.map(r=>{const first=returnMoney(r,rows).items[0];return <button type="button" key={r.id} className="kRetRow" aria-pressed={sel?.id===r.id} onClick={()=>setSelId(r.id)}>{first?thumb(first):<span className="kThumb"/>}<span className="grow"><b>Order #{num(r)} · {who(r)}</b><span>{plural((r.items||[]).reduce((s,x)=>s+Number(x.qty||1),0),'bag')} · {r.reason}</span></span><span className={`kPill ${RETURN_TONE[r.status]}`}>{RETURN_LABEL[r.status]}</span></button>}):<p className="kNote kRetNone">Nothing here.</p>}</div>
+  {sel&&<div className="kCard kRetDet"><div className="kRow between"><div><h2>Return for order #{num(sel)}</h2><p className="kNote">{who(sel)} · {sel.orders?.email||''} · ordered {shortDay(sel.orders?.created_at)} · order {String(sel.orders?.status||'').toLowerCase()}</p></div><span className={`kPill ${RETURN_TONE[st]}`}>{RETURN_LABEL[st]}</span></div>
+   {m.items.map((x,i)=><div className="kLine" key={x.order_item_id||i}>{thumb(x)}<div className="grow"><b>{x.qty>1?`${x.qty} × `:''}{x.name}</b><span className="kNote">{money(x.unit_price)}{x.qty>1?' each':''}</span></div></div>)}
+   <dl className="kKv"><dt>Reason</dt><dd>{sel.reason}</dd><dt>Note</dt><dd>{sel.note||'—'}</dd><dt>Return shipping</dt><dd>{free?'Paid by KARIA (arrived damaged or wrong)':'Paid by the customer'}</dd>
+    <dt>Photos</dt><dd>{sel.photo_paths?.length?(photos.length?<div className="kPh">{photos.map((u,i)=><a key={i} href={u} target="_blank" rel="noreferrer" aria-label={`Open photo ${i+1}`}><img src={u} alt={`Customer photo ${i+1}`}/></a>)}</div>:<span className="kNote">Loading…</span>):'None'}</dd>
+    {sel.return_tracking&&<><dt>Return tracking</dt><dd><span className="kTrack">{sel.return_tracking}</span></dd></>}
+    <dt>History</dt><dd>{(sel.history||[]).map((h,i)=><div key={i}>{RETURN_LABEL[h.status]||h.status} · <span className="kNote">{h.by?`${h.by} · `:''}{h.at?new Date(h.at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):''}</span></div>)}</dd></dl>
+   {st==='requested'&&<div className="kRow"><button type="button" className="kBtn ok" disabled={busy} onClick={()=>approve(sel)}>Approve</button><button type="button" className="kBtn danger" disabled={busy} onClick={()=>decline(sel)}>Decline</button></div>}
+   {st==='approved'&&<div className="kBox"><b>Return label</b><p className="kNote">Create it in Pirate Ship (Ship → Return label){free?' — KARIA pays, the item arrived damaged or wrong':''}, send it to the customer and paste the tracking number. The customer sees it in My orders.</p>
+    <input value={trk} onChange={e=>setTrk(e.target.value)} placeholder="e.g. 9202 0901 0000 0000 0000 00" aria-label="Return tracking number"/>
+    <div className="kRow"><button type="button" className="kBtn" disabled={busy||trk.trim()===(sel.return_tracking||'')} onClick={()=>save(sel,{return_tracking:trk.trim()||null},'Return tracking saved. The customer sees it in My orders.')}>Save tracking</button><button type="button" className="kBtn pri" disabled={busy} onClick={()=>received(sel)}>Mark bag received</button></div></div>}
+   {st==='received'&&<><div className="kRow"><button type="button" className="kBtn pri" disabled={busy||!canRefund} onClick={()=>setRefundOpen(true)}>Refund in Stripe…</button></div><p className="kNote kRetHint">{canRefund?'The bag is back. Check it, then refund. Stock goes back automatically.':'Only an admin can send refunds. Ask an admin.'}</p></>}
+   {st==='refunded'&&<div className="kBox green"><b>Refunded {money(sel.refund_amount)}</b> through Stripe{sel.refund_shipping?' (shipping included)':''} · {sel.stripe_refund_id||''} · stock returned{String(sel.orders?.status).toLowerCase()==='refunded'?` · order #${num(sel)} marked REFUNDED`:''}.</div>}
+   {st==='declined'&&<div className="kBox red"><b>Declined</b> · the customer sees it in My orders. {sel.orders?.email&&<a href={`mailto:${sel.orders.email}?subject=${encodeURIComponent(`KARIA — your return for order #${num(sel)}`)}`}>Email the customer</a>}</div>}
+  </div>}</div>}
+  {refundOpen&&sel&&<div className="kPickBack" onMouseDown={e=>{if(e.target===e.currentTarget&&!busy)setRefundOpen(false)}}><div className="kPick kRefund" role="dialog" aria-modal="true" aria-labelledby="kRefundT">
+   <h2 id="kRefundT">Refund in Stripe</h2><p className="kNote">Order #{num(sel)} · {who(sel)} · paid with card</p>
+   <div className="kAmt"><span>{m.items.map(x=>`${x.qty>1?x.qty+' × ':''}${x.name}`).join(' + ')}{m.net<m.items.reduce((s,x)=>s+x.qty*x.unit_price,0)-0.004?' (after the coupon)':''}</span><b>{money(m.total(false))}</b></div>
+   {m.ship>0?<div className="kRow" role="radiogroup" aria-label="Shipping"><label className="kCheck kRadio"><input type="radio" name="kship" checked={!withShip} onChange={()=>setWithShip(false)}/> Keep shipping</label><label className="kCheck kRadio"><input type="radio" name="kship" checked={withShip} onChange={()=>setWithShip(true)}/> Also refund shipping ({money(m.ship)})</label></div>:<p className="kNote">No shipping was charged on this order.</p>}
+   <div className="kAmt tot"><span>Refund to customer</span><b>{money(m.total(withShip))}</b></div>
+   <p className="kNote">The money goes back to the customer's card in 5–10 business days. Stripe keeps its original processing fee. This cannot be undone.</p>
+   <div className="kRow end"><button type="button" className="kBtn" autoFocus disabled={busy} onClick={()=>setRefundOpen(false)}>Cancel</button><button type="button" className="kBtn pri" disabled={busy||!(m.total(withShip)>0)} onClick={()=>refund(sel)}>{busy?'Refunding…':`Refund ${money(m.total(withShip))}`}</button></div>
+  </div></div>}</>;
+}
 function orderPhoto(item){return mainPhoto(item?.products?.product_media)}
 // Only orders that never moved real money can be deleted: unpaid ones, or ones paid with a Stripe test session (cs_test_…).
 const orderDeletable=o=>String(o?.status||'pending').toLowerCase()==='pending'||String(o?.stripe_session_id||'').startsWith('cs_test_');
@@ -464,7 +539,7 @@ function exportPirateShip(rows){
 }
 // "To ship" = paid and no tracking yet; "All paid" hides pending orders (checkouts the customer never paid).
 const ORDER_CHIPS=[['toship','To ship',o=>['paid','processing'].includes(o)],['shipped','Shipped',o=>o==='shipped'],['delivered','Delivered',o=>o==='delivered'],['problems','Refunded & cancelled',o=>o==='refunded'||o==='cancelled'],['all','All paid',o=>o!=='pending'],['pending','Abandoned checkouts',o=>o==='pending']];
-function OrderAdminTable({rows,onView,onDelete}){
+function OrderAdminTable({rows,returns=[],onView,onDelete}){
  const [filter,setFilter]=useState('toship'),[q,setQ]=useState('');
  if(!rows?.length)return <div className="kCard kEmpty">No orders yet.</div>;
  const st=o=>String(o.status||'pending').toLowerCase();
@@ -477,7 +552,7 @@ function OrderAdminTable({rows,onView,onDelete}){
    <td><b>#{o.order_number||'—'}</b><div className="kNote">{shortDay(o.created_at)}</div></td>
    <td className="kWho"><b>{a.full_name||a.name||o.email||'—'}</b><span>{[a.city,a.state].filter(Boolean).join(', ')||o.email||''}</span></td>
    <td><div className="kThumbs">{items.slice(0,3).map((it,i)=>{const photo=it.customization?null:orderPhoto(it),name=it.customization?`Custom bag · ${it.customization.style_name||''}`:it.products?.name||'Bag';return photo?<img className="kThumb" key={it.id||i} src={photo} alt={name} title={`${it.qty} × ${name}`}/>:<span className="kThumb" key={it.id||i} title={name}>{it.customization?'Custom':'—'}</span>})}{items.length>3&&<span className="kNote">+{items.length-3}</span>}</div></td>
-   <td><StatusPill s={s}/></td>
+   <td><StatusPill s={s}/>{returns.some(r=>r.order_id===o.id)&&<span className="kPill amber kRetPill" title={'Return: '+returns.filter(r=>r.order_id===o.id).map(r=>RETURN_LABEL[r.status]).join(', ')}>Return</span>}</td>
    <td>{o.tracking_number?<span className="kTrack" title={o.tracking_number}>{o.carrier?`${o.carrier} `:''}{o.tracking_number}</span>:['paid','processing'].includes(s)?<button type="button" className="kBtn sm" onClick={()=>onView(o)}>+ Add tracking</button>:<span className="kNote">—</span>}</td>
    <td className="num"><b>{money(o.total)}</b></td>
    <td><div className="kRow nowrap"><button type="button" className="kBtn sm" onClick={()=>onView(o)}>Open</button>{orderDeletable(o)&&<button type="button" className="kBtn sm danger" onClick={()=>onDelete(o)}>Delete</button>}</div></td></tr>})}</tbody></table></div>}</>

@@ -120,7 +120,7 @@ function App(){
  else if(path==="/shop"||path==="/new"||(path==="/customize"&&!CUSTOMIZE_ON))page=<ShopPage {...shop} loaded={loaded} startNew={path==="/new"}/>;
  else if(path==="/customize")page=<CustomizePage add={add} Header={Header}/>;
  else if(path==="/reviews")page=<ReviewsPage Header={Header} products={shopProducts} theme={theme} {...rev}/>;
- else if(path==="/orders")page=<OrdersPage user={user} Header={Header} onSignIn={signIn}/>;
+ else if(path==="/orders")page=<OrdersPage user={user} Header={Header} onSignIn={signIn} info={storefront}/>;
  else if(path==="/contact")page=<ContactPage Header={Header} info={storefront} theme={theme}/>;
  else if(path==="/about")page=<AboutPage Header={Header} info={storefront} products={shopProducts} theme={theme}/>;
  else if(path.startsWith("/product/"))page=<ProductPage {...shop} {...rev} loaded={loaded} id={decodeURIComponent(path.split("/").pop())}/>;

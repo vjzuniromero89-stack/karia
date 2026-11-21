@@ -21,7 +21,7 @@ function pages(info){
   returns:{small:'ORDERS & DELIVERY',title:'Returns & Refunds.',sections:[
    ['Return window',<p>You can return a bag within {days} days from delivery.</p>],
    ['Conditions',<ul><li>The item must be unused and in its original condition.</li><li>Custom and made-to-order bags are final sale and cannot be returned, unless they arrive damaged or wrong.</li></ul>],
-   ['How to start a return',<p>Contact us {contact} with your order number. We will reply with the return address and instructions. Please do not send items back without contacting us first.</p>],
+   ['How to start a return',<p>Go to <a href="/orders">My orders</a> and press Request a return, or contact us {contact} with your order number. We will reply with the return label and instructions. Please do not send items back before your return is approved.</p>],
    ['Return shipping',<p>The buyer pays return shipping, unless the item arrived damaged or we sent the wrong item.</p>],
    ['Refunds',<p>Once we receive and inspect the item, we refund it to your original payment method. The refund usually appears within 5–10 business days after inspection, depending on your bank.</p>],
   ]},

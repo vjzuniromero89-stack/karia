@@ -219,10 +219,77 @@ export function ReviewsPage({Header,products,reviews,user,onSignIn,onSaved,theme
 
 /* ───────────────────────── MY ORDERS ───────────────────────── */
 const STATUS_TEXT={paid:"Payment received — we are preparing your order.",processing:"We are preparing your order.",shipped:"Your order is on its way.",delivered:"Delivered.",cancelled:"This order was cancelled.",refunded:"This order was refunded."};
-export function OrdersPage({user,Header,onSignIn}){
- const [orders,setOrders]=useState(null),[error,setError]=useState("");
+/* Returns (V7.58): the customer asks in 3 steps; the database (karia_can_return + RLS) is the real guard. */
+const RETURN_REASONS=["Changed my mind","Color looks different","Arrived damaged","Wrong item"];
+const RETURN_FLOW=["requested","approved","received","refunded"];
+const RETURN_STEP={requested:"Requested",approved:"Approved — return label",received:"Bag received",refunded:"Refunded",declined:"Declined"};
+// Returns policy: KARIA pays return shipping only when the bag arrived damaged or wrong.
+export const kariaPaysReturn=reason=>reason==="Arrived damaged"||reason==="Wrong item";
+const itemName=it=>it.customization?`Custom Bag · ${it.customization.style_name||""}`:it.products?.name||"Product";
+const longDay=v=>v?new Date(v).toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"}):"";
+// Photos are redrawn as JPEG, 1600 px at most on the long side (the bucket takes JPEG only, 5 MB max).
+async function toJpeg(file){
+ const img=await createImageBitmap(file),k=Math.min(1,1600/Math.max(img.width,img.height)),c=document.createElement("canvas");
+ c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);const ctx=c.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(img,0,0,c.width,c.height);img.close?.();
+ const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",0.85));if(!blob)throw new Error("no blob");return blob;
+}
+function ReturnRequest({order,user,onCancel,onSent}){
+ const items=(order.order_items||[]).filter(it=>it.id);
+ const [step,setStep]=useState(1),[pick,setPick]=useState(()=>items.length===1?{[items[0].id]:1}:{}),[reason,setReason]=useState(""),[note,setNote]=useState(""),[files,setFiles]=useState([]),[busy,setBusy]=useState(false),[err,setErr]=useState("");
+ const urls=useMemo(()=>files.map(f=>URL.createObjectURL(f)),[files]);
+ useEffect(()=>()=>urls.forEach(u=>URL.revokeObjectURL(u)),[urls]);
+ const chosen=items.filter(it=>pick[it.id]);
+ const customPicked=chosen.some(it=>it.customization),free=kariaPaysReturn(reason);
+ const amount=chosen.reduce((s,it)=>s+pick[it.id]*Number(it.unit_price||0),0);
+ const subtotal=Number(order.subtotal)||items.reduce((s,it)=>s+Number(it.qty||0)*Number(it.unit_price||0),0);
+ const estimate=amount-(subtotal>0?Number(order.discount_total||0)*amount/subtotal:0);
+ const toggle=(it,on)=>setPick(p=>{const n={...p};if(on)n[it.id]=1;else delete n[it.id];return n});
+ const send=async()=>{setBusy(true);setErr("");try{
+   const folder=`${user.id}/${Date.now()}-${Math.random().toString(36).slice(2,8)}`,photo_paths=[];
+   if(free)for(let i=0;i<files.length;i++){let blob;try{blob=await toJpeg(files[i])}catch{throw new Error(`We could not read the photo "${files[i].name}". Please choose a JPEG or PNG photo.`)}
+    const path=`${folder}/${i+1}.jpg`,{error}=await supabase.storage.from("return-photos").upload(path,blob,{contentType:"image/jpeg",upsert:false});if(error)throw new Error("We could not upload your photos. Please try again, or send the request without photos.");photo_paths.push(path)}
+   const {error}=await supabase.from("return_requests").insert({order_id:order.id,reason,note:note.trim()||null,photo_paths,items:chosen.map(it=>({order_item_id:it.id,product_id:it.product_id,name:itemName(it),qty:pick[it.id],unit_price:Number(it.unit_price||0)}))});
+   if(error)throw new Error(error.code==="23505"?"You already have an open return for this order.":error.code==="42501"?"This order can no longer be returned online. Please contact us and we will help.":error.code==="P0001"?error.message:"We could not send your request right now. Please try again later.");
+   onSent();
+  }catch(e){setErr(e.message)}finally{setBusy(false)}};
+ const nav=(back,next,label="Continue",dis=false)=><div className="rtActs"><button type="button" className="rtBtn ghost" onClick={back}>{step===1?"Cancel":"Back"}</button><button type="button" className="rtBtn" disabled={dis||busy} onClick={next}>{busy?"Sending…":label}</button></div>;
+ return <div className="rtPanel"><h3>Request a return</h3>
+  <div className="rtSteps">{["1 · Choose bags","2 · Reason","3 · Review"].map((t,i)=><span key={t} className={step===i+1?"on":""}>{t}</span>)}</div>
+  {step===1&&<><p className="rtNote">Which bag do you want to return?</p>
+   {items.map(it=><label key={it.id} className="rtPick"><input type="checkbox" checked={!!pick[it.id]} onChange={e=>toggle(it,e.target.checked)}/>{mainPhoto(it.products?.product_media)?<img src={mainPhoto(it.products.product_media)} alt=""/>:<span className="rtNoImg"/>}<span className="rtGrow">{itemName(it)}{it.customization&&<small className="rtSmall">Made to order — returnable only if it arrived damaged or wrong</small>}</span>
+    {it.qty>1&&pick[it.id]?<select aria-label={`How many ${itemName(it)}`} value={pick[it.id]} onClick={e=>e.preventDefault()} onChange={e=>setPick(p=>({...p,[it.id]:Number(e.target.value)}))}>{Array.from({length:it.qty},(_,i)=><option key={i} value={i+1}>{i+1} of {it.qty}</option>)}</select>:null}<span>{money(it.unit_price)}</span></label>)}
+   {nav(onCancel,()=>setStep(2),"Continue",!chosen.length)}</>}
+  {step===2&&<><p className="rtNote">Tell us why — it helps us make better bags.</p>
+   {customPicked&&<p className="rtNote">Custom bags can be returned only if they arrived damaged or wrong.</p>}
+   <div className="rtReasons" role="radiogroup" aria-label="Reason">{RETURN_REASONS.map(r=>{const off=customPicked&&!kariaPaysReturn(r);return <label key={r} className={off?"off":""}><input type="radio" name={`reason-${order.id}`} value={r} checked={reason===r} disabled={off} onChange={()=>setReason(r)}/>{r}</label>})}</div>
+   {free&&<div className="rtDrop"><span>Add photos of the bag (helps us approve faster) — up to 3.</span>
+    {urls.length>0&&<div className="rtThumbs">{urls.map((u,i)=><figure key={u}><img src={u} alt={`Photo ${i+1}`}/><button type="button" aria-label={`Remove photo ${i+1}`} onClick={()=>setFiles(f=>f.filter((_,j)=>j!==i))}>×</button></figure>)}</div>}
+    {files.length<3&&<label className="rtBtn ghost rtFile">+ Add photo<input type="file" accept="image/*" multiple onChange={e=>{const add=Array.from(e.target.files||[]).filter(f=>f.type.startsWith("image/")||/\.hei[cf]$/i.test(f.name));e.target.value="";setFiles(f=>[...f,...add].slice(0,3))}}/></label>}</div>}
+   <label className="rtNote rtLabel" htmlFor={`rnote-${order.id}`}>Anything else? (optional)</label><textarea id={`rnote-${order.id}`} className="rtText" rows={3} maxLength={2000} value={note} onChange={e=>setNote(e.target.value)}/>
+   {nav(()=>setStep(1),()=>setStep(3),"Continue",!reason||(customPicked&&!free))}</>}
+  {step===3&&<><ul className="rtItems">{chosen.map(it=><li key={it.id}>{mainPhoto(it.products?.product_media)?<img src={mainPhoto(it.products.product_media)} alt=""/>:<span className="rtNoImg"/>}<div><b>{pick[it.id]>1?`${pick[it.id]} × `:""}{itemName(it)}</b><span>{reason}</span></div></li>)}</ul>
+   <p className="rtNote">Estimated refund: <b className="rtStrong">{money(estimate)}</b> to your original card after we receive the bag. {free?"We pay the return shipping because the item arrived damaged or wrong.":"Return shipping is paid by you, as our Returns policy says."}</p>
+   {err&&<p className="checkoutError" role="alert">{err}</p>}
+   {nav(()=>setStep(2),send,"Send return request")}</>}
+ </div>
+}
+function ReturnTracker({ret}){
+ const st=ret.status,hist=Array.isArray(ret.history)?ret.history:[],when=s=>{const h=[...hist].reverse().find(x=>x.status===s);return h?new Date(h.at).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):""};
+ const steps=st==="declined"?["requested","declined"]:RETURN_FLOW,at=steps.indexOf(st);
+ return <div className="rtPanel"><h3>Your return</h3><p className="rtNote">{(ret.items||[]).map(x=>`${x.qty>1?x.qty+" × ":""}${x.name}`).join(", ")} · {ret.reason}</p>
+  <ol className="rtLine">{steps.map((s,i)=><li key={s} className={`${i<=at?"done":""}${i===at?" now":""}`}><b>{RETURN_STEP[s]}</b>{i<=at&&when(s)}</li>)}</ol>
+  {ret.return_tracking&&["approved","received"].includes(st)&&<div className="rtLabelBox"><span>Ship the bag back with the return label we sent you. Tracking:</span><code>{ret.return_tracking}</code></div>}
+  {st==="refunded"&&<p className="rtNote">{money(ret.refund_amount)} was refunded to your card. Banks take 5–10 business days to show it.</p>}
+  {st==="declined"&&<p className="rtNote">We could not accept this return. <a href="/contact">Contact us</a> if you have any questions.</p>}
+ </div>
+}
+export function OrdersPage({user,Header,onSignIn,info={}}){
+ const [orders,setOrders]=useState(null),[error,setError]=useState(""),[returns,setReturns]=useState(null),[opened,setOpened]=useState(null);
+ const days=Number(info.returns_days)>0?Number(info.returns_days):14;
+ const loadReturns=async()=>{const {data,error}=await supabase.from("return_requests").select("id,order_id,status,items,reason,return_tracking,refund_amount,history,created_at").eq("customer_id",user.id).order("created_at",{ascending:false});setReturns(error?null:data||[])};
+ useEffect(()=>{if(!user||!supabase)return;loadReturns()},[user]);
  useEffect(()=>{if(!user||!supabase)return;let live=true;(async()=>{
-  let r=await supabase.from("orders").select("id,order_number,status,total,created_at,carrier,tracking_number,order_items(id,qty,unit_price,customization,products(name))").eq("customer_id",user.id).order("created_at",{ascending:false});
+  let r=await supabase.from("orders").select("id,order_number,status,total,subtotal,discount_total,shipping_total,created_at,carrier,tracking_number,order_items(id,product_id,qty,unit_price,customization,products(name,product_media(url,media_type,sort_order)))").eq("customer_id",user.id).order("created_at",{ascending:false});
   // customers may not be allowed to read order lines; the order itself is enough
   if(r.error)r=await supabase.from("orders").select("id,order_number,status,total,created_at,carrier,tracking_number").eq("customer_id",user.id).order("created_at",{ascending:false});
   if(!live)return;if(r.error)setError(r.error.message);
@@ -233,12 +300,18 @@ export function OrdersPage({user,Header,onSignIn}){
   :orders===null?<div className="catalogEmpty">Loading your orders…</div>
   :error?<div className="catalogEmpty">We could not load your orders right now. Please try again later.</div>
   :!orders.length?<div className="catalogEmpty emptyState"><b>No orders yet.</b><span>When you buy a KARIA bag, it appears here with its status and tracking.</span><a className="cta" href="/shop">SHOP KARIA <ArrowRight/></a></div>
-  :<div className="myOrders">{orders.map(o=>{const status=String(o.status||"").toLowerCase(),items=o.order_items||[];return <article className="myOrder" key={o.id}>
-    <div className="myOrderHead"><div><small>ORDER</small><h2>#{o.order_number||"—"}</h2></div><span className={`orderStatus ${status}`}>{status.toUpperCase()}</span></div>
+  :<div className="myOrders">{orders.map(o=>{const status=String(o.status||"").toLowerCase(),items=o.order_items||[],ret=returns?.find(r=>r.order_id===o.id);
+    // shipped or delivered, inside the returns window + 21 days for the trip (same rule as karia_can_return)
+    const canReturn=!!returns&&!ret&&items.some(it=>it.id)&&["shipped","delivered"].includes(status)&&Date.now()-new Date(o.created_at).getTime()<(days+21)*864e5;
+    return <article className="myOrder" key={o.id}>
+    <div className="myOrderHead"><div><small>ORDER</small><h2>#{o.order_number||"—"}</h2></div><div className="rtHeadTags"><span className={`orderStatus ${status}`}>{status.toUpperCase()}</span>{ret&&ret.status!=="refunded"&&<span className={`rtTag ${ret.status}`}>Return · {RETURN_STEP[ret.status].split(" —")[0]}</span>}</div></div>
     <p className="myOrderNote">{STATUS_TEXT[status]||""}</p>
-    {items.length>0&&<ul>{items.map(it=><li key={it.id}><span>{it.qty} × {it.customization?`Custom Bag · ${it.customization.style_name||""}`:it.products?.name||"Product"}</span><b>{money(Number(it.qty||0)*Number(it.unit_price||0))}</b></li>)}</ul>}
-    <div className="myOrderFoot"><span>{o.created_at?new Date(o.created_at).toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"}):""}</span><b>Total {money(o.total)}</b></div>
+    {items.length>0&&<ul>{items.map(it=><li key={it.id}><span>{it.qty} × {itemName(it)}</span><b>{money(Number(it.qty||0)*Number(it.unit_price||0))}</b></li>)}</ul>}
+    <div className="myOrderFoot"><span>{longDay(o.created_at)}</span><b>Total {money(o.total)}</b></div>
     {(o.carrier||o.tracking_number)&&<div className="myOrderTrack"><small>TRACKING</small><b>{[o.carrier,o.tracking_number].filter(Boolean).join(" · ")}</b></div>}
+    {canReturn&&opened!==o.id&&<div className="rtStart"><span className="rtNote">Returns are open for {days} days after delivery.</span><button type="button" className="rtBtn ghost" onClick={()=>setOpened(o.id)}>Request a return</button></div>}
+    {canReturn&&opened===o.id&&<ReturnRequest order={o} user={user} onCancel={()=>setOpened(null)} onSent={async()=>{await loadReturns();setOpened(null)}}/>}
+    {ret&&<ReturnTracker ret={ret}/>}
    </article>})}</div>;
  return <div className="catalogPage">{Header}<main className="catalogMain narrowMain"><div className="catalogHero"><small>MY ACCOUNT</small><h1>My orders.</h1>{user&&<p>{user.email}</p>}</div>{body}</main></div>
 }

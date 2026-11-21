@@ -464,3 +464,82 @@ html.noir .bqTile.wide{grid-column:1/-1}
   html.noir .bqTag{left:8px;top:8px;padding:4px 7px;letter-spacing:.14em}
   html.noir .bqAct .bqBtn{width:100%;padding:12px 8px;letter-spacing:.1em;min-height:44px}
 }
+/* Returns in My orders (V7.58). Plain rules work on the classic (light) look; html.noir rules give the Noir look. */
+.rtStart{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px;padding-top:16px;border-top:1px solid rgba(128,118,104,.3)}
+.rtHeadTags{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+.rtTag{font-size:11px;letter-spacing:.14em;text-transform:uppercase;padding:5px 9px;border:1px solid #b08a4e;color:#8a6a35;white-space:nowrap}
+.rtTag.declined{border-color:#b4362a;color:#b4362a}
+.rtPanel{border:1px solid #b08a4e;padding:22px;margin-top:18px;text-align:left}
+.rtPanel h3{font-size:26px;margin:0 0 6px;font-weight:400}
+.rtNote{font-size:14px;color:#6e6459;margin:6px 0}
+.rtStrong{color:inherit}
+.rtSmall{display:block;font-size:12px;letter-spacing:0;text-transform:none;opacity:.75;margin-top:2px}
+.rtSteps{display:flex;gap:8px;margin:14px 0 18px;flex-wrap:wrap}
+.rtSteps span{font-size:12px;letter-spacing:.14em;text-transform:uppercase;padding:6px 10px;border:1px solid rgba(128,118,104,.35);opacity:.7}
+.rtSteps span.on{border-color:#b08a4e;color:#8a6a35;opacity:1}
+.rtPick{display:flex;gap:12px;align-items:center;border:1px solid rgba(128,118,104,.35);padding:12px;margin-bottom:10px;cursor:pointer;font-size:15px}
+.rtPick input{width:20px;height:20px;flex:none;accent-color:#b08a4e;margin:0}
+.rtPick img,.rtNoImg,.rtItems img{width:56px;height:56px;object-fit:cover;flex:none;background:rgba(128,118,104,.15);display:block}
+.rtPick select{width:auto;min-height:40px;padding:6px 8px;font-size:14px}
+.rtGrow{flex:1;min-width:0}
+.rtReasons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:10px 0 16px}
+.rtReasons label{border:1px solid rgba(128,118,104,.35);padding:14px;cursor:pointer;font-size:15px;display:flex;gap:10px;align-items:center;margin:0;text-transform:none;letter-spacing:0}
+.rtReasons label:has(input:checked){border-color:#b08a4e}
+.rtReasons label.off{opacity:.45;cursor:not-allowed}
+.rtReasons input{accent-color:#b08a4e;margin:0;width:18px;height:18px;flex:none}
+.rtDrop{border:1px dashed rgba(128,118,104,.6);padding:16px;text-align:center;margin:0 0 16px;display:grid;gap:12px;justify-items:center;font-size:14px}
+.rtThumbs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.rtThumbs figure{position:relative;margin:0}
+.rtThumbs img{width:72px;height:72px;object-fit:cover;display:block}
+.rtThumbs button{position:absolute;top:-8px;right:-8px;width:28px;height:28px;border-radius:50%;border:0;background:#211d18;color:#fff;font-size:16px;line-height:1;cursor:pointer;padding:0}
+.rtFile{position:relative;overflow:hidden;cursor:pointer}
+.rtFile input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.rtLabel{display:block;margin-top:4px}
+.rtText{width:100%;min-height:84px;padding:12px 14px;font:inherit;font-size:16px;box-sizing:border-box}
+.rtActs{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px}
+.rtBtn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:12px 20px;background:#211d18;color:#fff;border:1px solid #211d18;font-size:13px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;cursor:pointer}
+.rtBtn.ghost{background:transparent;color:inherit;border-color:rgba(128,118,104,.6)}
+.rtBtn:disabled{opacity:.45;cursor:not-allowed}
+.rtItems{list-style:none;padding:0;margin:0 0 12px;display:grid;gap:10px;border:0!important}
+.rtItems li{display:flex;gap:12px;align-items:center;border:0!important;padding:0!important}
+.rtItems li b{display:block;font-size:17px;font-weight:400}
+.rtItems li span{font-size:14px;opacity:.75}
+.rtLine{list-style:none;margin:16px 0 0 6px;padding:0;border-left:1px solid rgba(128,118,104,.45)}
+.rtLine li{position:relative;padding:0 0 16px 22px!important;border:0!important;display:block!important;font-size:14px;opacity:.6}
+.rtLine li::before{content:"";position:absolute;left:-6px;top:6px;width:11px;height:11px;border-radius:50%;background:#fff;border:1px solid rgba(128,118,104,.7)}
+.rtLine li.done{opacity:1}
+.rtLine li.done::before{background:#b08a4e;border-color:#b08a4e}
+.rtLine li.now::before{box-shadow:0 0 0 4px rgba(200,164,106,.25)}
+.rtLine li b{display:block;font-weight:500;font-size:15px}
+.rtLabelBox{display:flex;gap:10px 14px;align-items:center;border:1px solid rgba(128,118,104,.35);padding:14px;margin-top:6px;flex-wrap:wrap;font-size:14px}
+.rtLabelBox code{font-size:15px;color:#8a6a35;word-break:break-all}
+@media (max-width:640px){.rtReasons{grid-template-columns:1fr}.rtPanel{padding:16px}.rtActs .rtBtn{flex:1}.rtStart .rtBtn{width:100%}}
+html.noir .rtPanel{border-color:var(--n-gold);background:#141210}
+html.noir .rtPanel h3{font-size:28px!important}
+html.noir .rtNote,html.noir .rtItems li span{color:var(--n-mut)!important}
+html.noir .rtStrong,html.noir .rtItems li b{color:var(--n-fg)!important;font-family:var(--n-serif)}
+html.noir .rtStart{border-color:var(--n-line)}
+html.noir .rtTag{border-color:#6d5a37;color:var(--n-gold)}
+html.noir .rtTag.declined{border-color:#7a3a33;color:#ff9d8f}
+html.noir .rtSteps span{border-color:var(--n-line);color:var(--n-mut)}
+html.noir .rtSteps span.on{border-color:var(--n-gold);color:var(--n-gold)}
+html.noir .rtPanel label{color:var(--n-soft)!important}
+html.noir .rtPick,html.noir .rtReasons label,html.noir .rtLabelBox{border-color:var(--n-line)}
+html.noir .rtReasons label:has(input:checked),html.noir .rtPick:has(input:checked){border-color:var(--n-gold);color:var(--n-fg)!important}
+html.noir .rtPick input,html.noir .rtReasons input{accent-color:var(--n-gold)}
+html.noir .rtDrop{border-color:#6e665c;color:var(--n-soft)}
+html.noir .rtText{border-color:#3a352f!important}
+html.noir .rtBtn{background:var(--n-fg);color:#0f0e0d;border-color:var(--n-fg);font-family:var(--n-sans)}
+html.noir .rtBtn:hover:not(:disabled){background:var(--n-gold);border-color:var(--n-gold);color:#0f0e0d}
+html.noir .rtBtn.ghost{background:transparent!important;color:var(--n-fg)!important;border:1px solid #5b544b!important}
+html.noir .rtBtn.ghost:hover:not(:disabled){background:var(--n-fg)!important;color:#0f0e0d!important}
+html.noir .rtLine{border-color:var(--n-line)}
+html.noir .rtLine li{color:var(--n-mut)}
+html.noir .rtLine li.done{color:var(--n-fg)}
+html.noir .rtLine li::before{background:var(--n-bg)}
+html.noir .rtLine li.done::before{background:var(--n-gold);border-color:var(--n-gold)}
+html.noir .rtLine li.now::before{background:var(--n-bg)}
+html.noir .rtLabelBox code{color:var(--n-gold)}
+html.noir .rtThumbs button{background:var(--n-fg);color:#0f0e0d}/* My orders: total and tracking box were dark-on-dark / light-on-light in Noir */
+html.noir .myOrderFoot b,html.noir .myOrderTrack b{color:var(--n-fg)!important}
+html.noir .myOrderTrack{background:var(--n-bg3)!important;border-radius:0!important}
