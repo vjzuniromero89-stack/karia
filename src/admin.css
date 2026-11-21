@@ -243,4 +243,49 @@
  .admin.kAdmin .kPcards{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
  .admin.kAdmin .kPanel{padding:18px 16px}
 }
+/* Photos tab + "Choose from Photos" picker */
+.admin.kAdmin .kDropZone{border:2px dashed var(--line);border-radius:14px;background:var(--card);padding:20px;display:grid;justify-items:center;gap:6px;text-align:center;color:var(--ink2);font-size:14px;cursor:pointer;margin-bottom:16px;transition:background .15s,border-color .15s}
+.admin.kAdmin .kDropZone svg{width:28px;height:28px;color:var(--ink2)}
+.admin.kAdmin .kDropZone b{color:var(--ink);font-size:16px}
+.admin.kAdmin .kDropZone.big{padding:64px 20px}
+.admin.kAdmin .kDropZone.big svg{width:44px;height:44px}
+.admin.kAdmin .kDropZone:hover{border-color:var(--ink2)}
+.admin.kAdmin .kDropZone.on{border-color:var(--blue);background:var(--bluebg)}
+.admin.kAdmin .kDropZone.busy b{color:var(--blue)}
+.admin.kAdmin .kLib{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:20px}
+.admin.kAdmin .kLibCard{position:relative;margin:0;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.admin.kAdmin .kLibCard.on{border-color:var(--blue);box-shadow:0 0 0 2px var(--blue)}
+.admin.kAdmin .kLibImg{display:block;background:var(--soft)}
+.admin.kAdmin .kLibImg img,.admin.kAdmin .kLibPick img{width:100%;aspect-ratio:1;height:auto;object-fit:cover;display:block}
+.admin.kAdmin .kLibCard figcaption{padding:10px 12px 0;display:grid;gap:4px;min-width:0}
+.admin.kAdmin .kLibCard figcaption>b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.admin.kAdmin .kLibCard figcaption .kNote{font-size:13px}
+.admin.kAdmin .kLibCard figcaption .kPill{justify-self:start;font-size:12px}
+.admin.kAdmin .kLibCheck{position:absolute;top:8px;left:8px;width:40px;height:40px;display:grid;place-items:center;background:rgba(255,255,255,.92);border-radius:10px;cursor:pointer;z-index:1}
+.admin.kAdmin .kLibCheck input{width:20px;height:20px;margin:0;cursor:pointer}
+.admin.kAdmin .kLibActs{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 12px 12px;margin-top:auto}
+.admin.kAdmin .kLibActs .kBtn{min-height:40px;padding:6px 8px;white-space:normal;line-height:1.2;text-align:center}
+.admin.kAdmin .kRename{display:grid;gap:6px}
+.admin.kAdmin .kRename .kBtn{min-height:40px}
+.admin.kAdmin .kBulk{position:sticky;top:8px;z-index:5;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 12px;margin-bottom:14px;border-radius:12px;background:var(--ink);color:#fff}
+.admin.kAdmin .kBulk b{margin-right:auto;font-size:15px}
+.admin.kAdmin .kUse{display:grid;gap:10px;max-width:560px}
+.admin.kAdmin .filePreview figure{position:relative}
+.admin.kAdmin .filePreview .kX{position:absolute;top:4px;right:4px;width:32px;height:32px;border-radius:50%;border:0;background:rgba(27,25,22,.8);color:#fff;font-size:18px;line-height:1;cursor:pointer;display:grid;place-items:center;padding:0}
+.admin.kAdmin .kPickBack{position:fixed;inset:0;z-index:100000;background:rgba(24,20,17,.62);display:flex;align-items:center;justify-content:center;padding:16px}
+.admin.kAdmin .kPick{background:var(--card);border-radius:16px;width:min(880px,100%);max-height:92vh;overflow:auto;padding:20px;display:grid;gap:14px;align-content:start;text-align:left}
+.admin.kAdmin .kPick h2{font:600 24px/1.2 var(--k-serif)!important;margin:0;color:var(--ink)}
+.admin.kAdmin .kPick .kLib{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin:0}
+.admin.kAdmin .kPick .kRow.end{position:sticky;bottom:-20px;background:var(--card);padding:10px 0 0}
+.admin.kAdmin .kPickSearch{border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:15px;min-height:42px;width:100%;background:#fff;color:var(--ink)}
+.admin.kAdmin .kLibPick{position:relative;border:2px solid var(--line);border-radius:12px;overflow:hidden;padding:0;background:var(--soft);cursor:pointer;display:block;text-align:left;min-width:0}
+.admin.kAdmin .kLibPick[aria-pressed="true"]{border-color:var(--blue);box-shadow:0 0 0 2px var(--blue)}
+.admin.kAdmin .kLibName{display:block;padding:6px 8px;font-size:13px;color:var(--ink);background:var(--card);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.admin.kAdmin .kPickNo{position:absolute;top:6px;left:6px;min-width:28px;height:28px;border-radius:50%;background:var(--blue);color:#fff;font-weight:700;font-size:14px;display:grid;place-items:center}
+@media(max-width:700px){
+ .admin.kAdmin .kLib,.admin.kAdmin .kPick .kLib{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .admin.kAdmin .kLibActs{grid-template-columns:minmax(0,1fr)}
+ .admin.kAdmin .kDropZone.big{padding:40px 16px}
+ .admin.kAdmin .kPick{padding:16px}
+}
 .admin .kHint{display:block;font-size:13px;font-weight:400;color:#5f574e;margin-top:6px;text-transform:none;letter-spacing:0}

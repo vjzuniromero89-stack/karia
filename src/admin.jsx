@@ -1,6 +1,6 @@
 // KARIA admin panel (moved out of main.jsx in V7.49 so the store loads it only when an admin opens it).
 import React,{useEffect,useMemo,useRef,useState} from "react";
-import {ShoppingBag,Package,Wallet,Users,Boxes,BarChart3,Settings,Tag,LayoutGrid,UserCog,Mail,Star,Send} from "lucide-react";
+import {ShoppingBag,Package,Wallet,Users,Boxes,BarChart3,Settings,Tag,LayoutGrid,UserCog,Mail,Star,Send,Images} from "lucide-react";
 import {supabase} from "./supabase";
 import {Stars,mainPhoto} from "./storefront";
 import {CustomizeAdmin,CustomizationSheet,CUSTOM_SKU} from "./customize";
@@ -16,7 +16,7 @@ const money=n=>{const v=Number(n||0);return `${v<0?'−':''}$${Math.abs(v).toFix
 const plural=(n,w)=>`${n} ${w}${n===1?'':'s'}`;
 const shortDay=v=>v?new Date(v).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
 // Menu in the order of the owners' day. Badges are added for Orders, Messages and Products.
-const NAV=[['Today',[['Dashboard',BarChart3]]],['Sales',[['Orders',ShoppingBag],['Customers',Users],['Messages',Mail],['Reviews',Star]]],['Catalog',[['Products',Package],['Inventory',Boxes],['Categories & brands',LayoutGrid]]],['Marketing',[['Coupons',Tag],['Newsletter',Send]]],['Money',[['Accounting',Wallet]]],['Store',[['Settings',Settings],['Team',UserCog]]]];
+const NAV=[['Today',[['Dashboard',BarChart3]]],['Sales',[['Orders',ShoppingBag],['Customers',Users],['Messages',Mail],['Reviews',Star]]],['Catalog',[['Products',Package],['Photos',Images],['Inventory',Boxes],['Categories & brands',LayoutGrid]]],['Marketing',[['Coupons',Tag],['Newsletter',Send]]],['Money',[['Accounting',Wallet]]],['Store',[['Settings',Settings],['Team',UserCog]]]];
 const STATUS_TONE={paid:'green',processing:'green',shipped:'blue',delivered:'violet',pending:'amber',cancelled:'red',refunded:'red'};
 const StatusPill=({s})=>{const k=String(s||'pending').toLowerCase();return <span className={`kPill ${STATUS_TONE[k]||'grey'}`}>{k[0].toUpperCase()+k.slice(1)}</span>};
 const StockPill=({n})=><span className={`kStock ${n<=0?'s0':n<=2?'slow':'sok'}`}>{n<=0?'Sold out':`${n} left`}</span>;
@@ -32,10 +32,11 @@ const orderProfit=o=>Number(o.subtotal||0)-Number(o.discount_total??o.discount??
 const MEDIA_BUCKET='product-media';
 const mediaPath=url=>{const k=`/${MEDIA_BUCKET}/`,i=String(url||'').indexOf('/storage/v1/object/public'+k);return i<0?null:decodeURIComponent(String(url).slice(i+('/storage/v1/object/public'+k).length).split('?')[0])};
 // Photos over 1600px on the long side are redrawn and sent as JPEG 0.85; videos, GIFs and small photos go as they are.
-async function shrinkImage(file){
+// force: redraw as JPEG even when small (HEIC → JPEG for the Photos library).
+async function shrinkImage(file,force=false){
  if(!file.type.startsWith('image/')||/gif|svg/.test(file.type))return file;
- try{const img=await createImageBitmap(file);const big=Math.max(img.width,img.height);if(big<=1600){img.close?.();return file}
-  const k=1600/big,c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(img,0,0,c.width,c.height);img.close?.();
+ try{const img=await createImageBitmap(file);const big=Math.max(img.width,img.height);if(big<=1600&&!force){img.close?.();return file}
+  const k=Math.min(1,1600/big),c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(img,0,0,c.width,c.height);img.close?.();
   const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',0.85));return blob?new File([blob],file.name.replace(/\.[^.]+$/,'')+'.jpg',{type:'image/jpeg'}):file}
  catch{return file}
 }
@@ -49,11 +50,46 @@ async function uploadMedia(productId,files,start,onStep,done={paths:[],ids:[]}){
  }
  return done;
 }
-function FilePreview({files}){
+// Photos library (media_library rows + files under product-media/library/).
+const LIB_TYPE=/^image\/(jpeg|png|webp|gif)$/,LIB_ACCEPT='image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.heic,.heif';
+const isHeic=f=>/image\/hei[cf]/i.test(f.type)||/\.hei[cf]$/i.test(f.name||'');
+const fmtSize=b=>!b?'':b>=1048576?`${(b/1048576).toFixed(1)} MB`:`${Math.max(1,Math.round(b/1024))} KB`;
+// Image files from a paste event (screenshots, copied images), renamed "Pasted image <date time>.<ext>".
+function clipboardImages(e){
+ const d=e.clipboardData;let files=Array.from(d?.files||[]);
+ if(!files.length)files=Array.from(d?.items||[]).filter(i=>i.kind==='file').map(i=>i.getAsFile()).filter(Boolean);
+ files=files.filter(f=>f.type.startsWith('image/')||isHeic(f));
+ const stamp=new Date().toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}).replace(/,/g,'');
+ return files.map((f,i)=>new File([f],`Pasted image ${stamp}${files.length>1?` (${i+1})`:''}.${(f.type.split('/')[1]||'png').replace('jpeg','jpg')}`,{type:f.type}));
+}
+// HEIC is redrawn as JPEG (works only where the browser can decode it); big photos shrink; width/height go in the row.
+async function uploadToLibrary(original){
+ let file;
+ if(isHeic(original)){file=await shrinkImage(new File([original],original.name,{type:'image/heic'}),true);if(file.type!=='image/jpeg')throw new Error(`"${original.name}" is a HEIC photo this browser cannot open. Save it as JPEG (iPhone: Settings → Camera → Formats → Most Compatible) and try again.`)}
+ else file=await shrinkImage(original);
+ let width=null,height=null;try{const b=await createImageBitmap(file);width=b.width;height=b.height;b.close?.()}catch{}
+ const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif'}[file.type]||'jpg';
+ const path=`library/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+ const {error:ue}=await supabase.storage.from(MEDIA_BUCKET).upload(path,file,{upsert:false,contentType:file.type});if(ue)throw new Error(`"${original.name}" could not be uploaded: ${ue.message}`);
+ const {data:pub}=supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path);
+ const name=/^Pasted image /.test(original.name)?original.name.replace(/\.\w+$/,''):original.name;
+ const {error}=await supabase.from('media_library').insert({path,url:pub.publicUrl,name,size_bytes:file.size,width,height});
+ if(error){await supabase.storage.from(MEDIA_BUCKET).remove([path]);throw new Error(`"${original.name}" could not be saved: ${error.message}`)}
+}
+// Adds already-uploaded photos (library URLs, no new upload) after the product's last photo, in one insert (all or nothing).
+async function attachUrls(productId,urls,done={ids:[]}){
+ if(!urls.length)return done;
+ const {data,error}=await supabase.from('product_media').select('sort_order').eq('product_id',productId);if(error)throw error;
+ const start=(data||[]).reduce((m,r)=>Math.max(m,(Number(r.sort_order)||0)+1),0);
+ const {data:rows,error:ie}=await supabase.from('product_media').insert(urls.map((url,i)=>({product_id:productId,url,media_type:'image',sort_order:start+i}))).select('id');if(ie)throw new Error(`The photos from Photos could not be added: ${ie.message}`);
+ done.ids.push(...(rows||[]).map(r=>r.id));return done;
+}
+const copyText=async text=>{try{await navigator.clipboard.writeText(text);return true}catch{const t=Object.assign(document.createElement('textarea'),{value:text});document.body.appendChild(t);t.select();let ok=false;try{ok=document.execCommand('copy')}catch{}t.remove();return ok}};
+function FilePreview({files,onRemove}){
  const urls=useMemo(()=>files.map(f=>({name:f.name,video:f.type.startsWith('video/'),url:URL.createObjectURL(f)})),[files]);
  useEffect(()=>()=>urls.forEach(u=>URL.revokeObjectURL(u.url)),[urls]);
  if(!urls.length)return null;
- return <div className="filePreview">{urls.map((u,i)=><figure key={u.url}>{u.video?<video src={u.url} muted/>:<img src={u.url} alt={u.name}/>}<figcaption>{i===0?'MAIN · ':''}{u.name}</figcaption></figure>)}</div>;
+ return <div className="filePreview">{urls.map((u,i)=><figure key={u.url}>{u.video?<video src={u.url} muted/>:<img src={u.url} alt={u.name}/>}<figcaption>{i===0?'MAIN · ':''}{u.name}</figcaption>{onRemove&&<button type="button" className="kX" aria-label={`Remove ${u.name}`} onClick={()=>onRemove(i)}>×</button>}</figure>)}</div>;
 }
 
 function Admin({back}){
@@ -65,7 +101,10 @@ function Admin({back}){
  const [accountingSales,setAccountingSales]=useState([]),[accountingExpenses,setAccountingExpenses]=useState([]),[period,setPeriod]=useState('30');
  const [settingsValues,setSettingsValues]=useState({}),[customerOrders,setCustomerOrders]=useState([]),[subscribers,setSubscribers]=useState([]);
  const [stockById,setStockById]=useState({}),[couponUses,setCouponUses]=useState({}),[productDraft,setProductDraft]=useState(null),[pickedFiles,setPickedFiles]=useState([]),[uploadStep,setUploadStep]=useState(''),[openingQty,setOpeningQty]=useState(''),[ask,setAsk]=useState(null);
+ const [libPicks,setLibPicks]=useState([]),[pickerOpen,setPickerOpen]=useState(false);
  const photosDirty=useRef(false),productFormRef=useRef(null);
+ // A pasted image (Ctrl+V / Cmd+V) while the New product drawer is open joins its photo list like a chosen file.
+ useEffect(()=>{if(!newOpen)return;const onPaste=e=>{const files=clipboardImages(e);if(!files.length)return;e.preventDefault();setPickedFiles(p=>[...p,...files]);setNotice(`${plural(files.length,'pasted photo')} added to the new product.`)};window.addEventListener('paste',onPaste);return()=>window.removeEventListener('paste',onPaste)},[newOpen]);
  // Inline confirmation bar instead of window.confirm: ask({text,yes,run}).
  const confirmBar=ask&&<div className="adminConfirm" role="alertdialog"><p>{ask.text}</p><div><button type="button" onClick={()=>setAsk(null)}>CANCEL</button><button type="button" className="dangerBtn" onClick={()=>{const run=ask.run;setAsk(null);run()}}>{ask.yes||'YES'}</button></div></div>;
  const loadInventoryAccounting=async()=>{
@@ -153,17 +192,19 @@ function Admin({back}){
  useEffect(()=>{if(!supabase)return;(async()=>{const [{data:b},{data:c},{data:p}]=await Promise.all([supabase.from('brands').select('id,name,active').order('name'),supabase.from('categories').select('id,name,slug,active').order('name'),supabase.from('products').select('id,name,sku,category,brand_id').eq('active',true).order('name')]);setBrands(b||[]);setCategories(c||[]);setProductsList(p||[])})()},[tab,notice]);
  // brands/categories hold inactive ones too, so an edit can still show a product's current value; new choices use only active ones.
  const activeBrands=brands.filter(b=>b.active!==false),activeCategories=categories.filter(c=>c.active!==false);
- const create=async(e,kind)=>{e.preventDefault();const form=e.currentTarget;const imageFiles=kind==='product'?Array.from(form.elements?.images?.files||[]):[];const f=Object.fromEntries(new FormData(form));setNotice('');let msg='Saved successfully.';try{
+ const create=async(e,kind)=>{e.preventDefault();const form=e.currentTarget;const imageFiles=kind==='product'?pickedFiles:[];const f=Object.fromEntries(new FormData(form));setNotice('');let msg='Saved successfully.';try{
   if(kind==='brand'){const {error}=await supabase.from('brands').insert({name:f.name,slug:String(f.name).toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''),story:f.description||null});if(error)throw error}
   if(kind==='category'){const name=String(f.name||'').trim();const slug=String(f.slug||name).toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');const {error}=await supabase.from('categories').insert({name,slug,active:true});if(error)throw error}
   if(kind==='product'){
    const opening=Number(f.opening_stock);if(f.opening_stock===''||!Number.isInteger(opening)||opening<0)throw new Error('Initial stock must be a whole number, 0 or more.');
+   if(!imageFiles.length&&!libPicks.length)throw new Error('Add at least one photo: choose files, paste one (Ctrl+V) or pick from Photos.');
    setUploading(true);const name=String(f.name).trim();
    const payload={name,sku:String(f.sku||'').trim()||autoSku(name),description:f.description||null,materials:f.materials||null,dimensions:f.dimensions||null,price:Number(f.price||0),compare_at_price:f.compare_at_price?Number(f.compare_at_price):null,unit_cost:Number(f.cost||0),brand_id:f.brand_id||null,weight:f.weight?Number(f.weight):null,low_stock_threshold:Number(f.low_stock_threshold||2),featured:f.featured==='on',category:(categories.find(c=>c.id===f.category_id)?.name||null),active:f.publish_shop==='on',slug:slugify(name)+'-'+Date.now().toString().slice(-5)};
    const {data,error}=await supabase.from('products').insert(payload).select().single();if(error)throw new Error(dbError(error));
    const done={paths:[],ids:[]};
    try{
     await uploadMedia(data.id,imageFiles,0,setUploadStep,done);
+    await attachUrls(data.id,libPicks.map(p=>p.url),done);
     if(opening>0){const {error:se}=await supabase.from('inventory_movements').insert({product_id:data.id,qty:opening,movement_type:'ADJUST',note:'OPENING STOCK'});if(se)throw new Error(`The initial stock could not be saved: ${se.message}`)}
    }catch(err){
     // Never leave a half-created product: remove the row (with its media and stock rows) and the uploaded files.
@@ -172,7 +213,7 @@ function Admin({back}){
     if(done.paths.length)await supabase.storage.from(MEDIA_BUCKET).remove(done.paths);
     throw new Error(de||r?.action!=='deleted'?`${err.message}\nThe product "${name}" was created but could not be removed automatically. Find it in the list below and delete it, then try again.`:`${err.message}\nNothing was saved — the product was NOT created. Please try again.`);
    }
-   setUploading(false);setUploadStep('');setPickedFiles([]);setOpeningQty('');setProductDraft(null);setNewOpen(false);
+   setUploading(false);setUploadStep('');setPickedFiles([]);setLibPicks([]);setOpeningQty('');setProductDraft(null);setNewOpen(false);
    msg=`Product "${name}" created (SKU ${payload.sku}) with ${opening} in stock.${opening===0?' It will show as SOLD OUT until you add stock.':''}${payload.active?'':' It is NOT published in the shop yet.'}`;
   }
   if(kind==='inventory'){const isOpening=f.movement_type==='OPENING_UI';const movementType=isOpening?'ADJUST':f.movement_type;const note=isOpening?`OPENING STOCK${f.note?' · '+f.note:''}`:(f.note||null);const {error}=await supabase.from('inventory_movements').insert({product_id:f.product_id,qty:Number(f.quantity),movement_type:movementType,note});if(error)throw error}
@@ -194,7 +235,7 @@ function Admin({back}){
  };
  const saveCoupon=async(r,f)=>{setNotice('');try{const {error}=await supabase.from('coupons').update(couponPayload(f)).eq('id',r.id);if(error)throw error;setNotice(`Coupon ${String(f.code).toUpperCase()} updated.`);await load();return true}catch(e){setNotice(e.code==='23505'?'That coupon code already exists.':e.message);return false}};
  const addStock=async(product,qty)=>{setNotice('');try{const n=Number(qty);if(!Number.isInteger(n)||n<1)throw new Error('Enter a whole quantity of 1 or more.');const {error}=await supabase.from('inventory_movements').insert({product_id:product.id,qty:n,movement_type:'IN',note:'Received · added from Products'});if(error)throw error;setNotice(`${n} added to "${product.name}".`);await load();return true}catch(e){setNotice(e.message);return false}};
- const duplicateProduct=r=>{setProductDraft({...r,name:`${r.name||''} (copy)`,sku:'',_key:Date.now()});setPickedFiles([]);setOpeningQty('');setNewOpen(true);setNotice(`Copy of "${r.name}" ready — add photos, check the details, then create it.`)};
+ const duplicateProduct=r=>{setProductDraft({...r,name:`${r.name||''} (copy)`,sku:'',_key:Date.now()});setPickedFiles([]);setLibPicks([]);setOpeningQty('');setNewOpen(true);setNotice(`Copy of "${r.name}" ready — add photos, check the details, then create it.`)};
  const saveExpense=async(r,f)=>{setNotice('');try{const amount=Number(f.amount);if(!String(f.description||'').trim()||!(amount>0))throw new Error('An expense needs a description and an amount above 0.');const {error}=await supabase.from('expenses').update({description:f.description.trim(),amount,category:f.category?.trim()||'Operating',expense_date:f.expense_date||r.expense_date}).eq('id',r.id);if(error)throw error;setNotice('Expense updated.');await load();return true}catch(e){setNotice(e.message);return false}};
  const deleteExpense=r=>setAsk({text:`Delete the expense "${r.description||''}" (${money(r.amount)})? This cannot be undone.`,yes:'DELETE EXPENSE',run:async()=>{setNotice('');try{const {error}=await supabase.from('expenses').delete().eq('id',r.id);if(error)throw error;setNotice('Expense deleted.');await load()}catch(e){setNotice(e.message)}}});
  const saveBrand=async(r,f)=>{setNotice('');try{const name=String(f.name||'').trim();if(!name)throw new Error('The brand needs a name.');const {error}=await supabase.from('brands').update({name,story:String(f.story||'').trim()||null}).eq('id',r.id);if(error)throw error;setNotice(`Brand "${name}" updated.`);await load();return true}catch(e){setNotice(e.code==='23505'?'Another brand already has that name.':e.message);return false}};
@@ -308,7 +349,7 @@ function Admin({back}){
   }});
  };
  const go=t=>{if(t===tab)return;setRows([]);setTab(t)};
- const openNewProduct=()=>{setProductDraft(null);setPickedFiles([]);setOpeningQty('');setNewOpen(true)};
+ const openNewProduct=()=>{setProductDraft(null);setPickedFiles([]);setLibPicks([]);setOpeningQty('');setNewOpen(true)};
  const stOf=o=>String(o.status||'pending').toLowerCase();
  // Sidebar badges: paid orders still without tracking, contact messages of the last 7 days (there is no read flag), active bags at 0.
  const toShip=customerOrders.filter(o=>['paid','processing'].includes(stOf(o))&&!o.tracking_number);
@@ -346,6 +387,7 @@ function Admin({back}){
   if(tab==='Messages'){const week=Date.now()-7*864e5;return <><Head eyebrow="Sales" title="Messages"/><p className="kSub">Messages customers send from the Contact page. Reply opens your email app.</p>{rows.length?<div className="kCard">{rows.map(r=><div className="kMsg" key={r.id}><div className="kAv" aria-hidden="true">{String(r.name||'?').trim().charAt(0).toUpperCase()}</div><div className="grow"><b>{new Date(r.created_at)>=week&&<span className="kNew" title="This week"/>}{r.name}</b> <span className="kNote">{r.email} · {r.created_at?new Date(r.created_at).toLocaleString():''}</span><p>{r.message}</p></div><div className="kRow"><a className="kBtn sm" href={'mailto:'+r.email+'?subject='+encodeURIComponent('KARIA — your message')}>Reply by email</a><button type="button" className="kBtn sm danger" onClick={()=>deleteMessage(r)}>Delete</button></div></div>)}</div>:<div className="kCard kEmpty">No messages yet.</div>}</>}
   if(tab==='Reviews')return <><Head eyebrow="Sales" title="Reviews"/><p className="kSub">Reviews are published as soon as a customer sends them. Hide one to take it off the store without deleting it.</p><ReviewList rows={rows} products={productsList} onToggle={toggleReview} onDelete={deleteReview}/></>;
   if(tab==='Products')return <><Head eyebrow="Catalog" title="Products"><button type="button" className="kBtn pri" onClick={openNewProduct}>+ New product</button></Head><ProductAdminTable rows={rows} stock={stockById} onEdit={editProduct} onDelete={deleteProduct} onDuplicate={duplicateProduct} onAddStock={addStock}/></>;
+  if(tab==='Photos')return <PhotosAdmin setNotice={setNotice} setAsk={setAsk}/>;
   if(tab==='Inventory'){const t=inventoryTotals,out=inventorySummary.filter(r=>r.active!==false&&r.sku!==CUSTOM_SKU&&r.current<=0).length;return <><Head eyebrow="Catalog" title="Inventory"><button type="button" className="kBtn pri" onClick={()=>setFormOpen(v=>!v)}>{formOpen?'Close':'+ Receive stock'}</button></Head>
    <div className="kGrid g4"><Kpi label="Bags in stock" value={t.current} sub={`${t.opening} opening · ${t.received} received · ${t.returns} returned`}/><Kpi label="Stock value at cost" value={money(t.value)}/><Kpi label="Sold · all time" value={t.sold} sub={t.out?`${t.out} other OUT`:'Written by orders'}/><Kpi label="Sold-out products" value={out} tone={out?'red':''}/></div>
    {formOpen&&<form className="kCard kForm" onSubmit={e=>create(e,'inventory')}><h2>Add inventory movement</h2><p className="kSub">Use OPENING STOCK only for the first physical count of a product. Use IN for later receipts. Sales are recorded automatically by orders.</p><div className="kFields"><label className="caField">Product *<select name="product_id" required><option value="">Select product</option>{productsList.map(p=><option key={p.id} value={p.id}>{p.name} · {p.sku}</option>)}</select></label><Field label="Quantity *" name="quantity" type="number" step="1" min="1" required/><label className="caField">Movement<select name="movement_type" defaultValue="IN"><option value="IN">IN / RECEIVED</option><option value="OPENING_UI">OPENING STOCK</option><option value="OUT">OUT</option><option value="RETURN">RETURN</option><option value="ADJUST">ADJUSTMENT</option><option value="PRODUCTION_IN">PRODUCTION IN</option></select></label><Field label="Reason / reference" name="note"/></div><div><button className="kBtn pri">Post movement</button></div></form>}
@@ -382,16 +424,19 @@ function Admin({back}){
   return <DataTable rows={rows}/>;
  };
  const d=productDraft||{},draftCat=categories.find(c=>c.name===d.category)?.id||'';
- return <div className="admin kAdmin"><aside className="kSide" aria-label="Admin sections"><div className="kBrand">KARIA</div><small className="kBrandSub">Administration</small>{NAV.map(([g,list])=><React.Fragment key={g}><em className="kGrp">{g}</em>{list.map(([x,I])=><button type="button" key={x} className="kNav" aria-current={tab===x?'page':undefined} onClick={()=>go(x)}><I aria-hidden="true"/>{x}{badges[x]>0&&<span className="kCnt" title="Needs attention">{badges[x]}</span>}</button>)}</React.Fragment>)}<button type="button" className="kNav kBack" onClick={back}>← Storefront</button></aside><section className="kMain">{loading&&!rows.length?<div className="kCard kEmpty">Loading…</div>:module()}</section>
+ return <div className="admin kAdmin"><aside className="kSide" aria-label="Admin sections"><div className="kBrand">KARIA</div><small className="kBrandSub">Administration</small>{NAV.map(([g,list])=><React.Fragment key={g}><em className="kGrp">{g}</em>{list.map(([x,I])=><button type="button" key={x} className="kNav" aria-current={tab===x?'page':undefined} onClick={()=>go(x)}><I aria-hidden="true"/>{x}{badges[x]>0&&<span className="kCnt" title="Needs attention">{badges[x]}</span>}</button>)}</React.Fragment>)}<button type="button" className="kNav kBack" onClick={back}>← Storefront</button></aside><section className="kMain">{loading&&!rows.length&&tab!=='Photos'?<div className="kCard kEmpty">Loading…</div>:module()}</section>
 {notice&&<div className="notice adminToast" role="status"><span>{notice}</span><button type="button" aria-label="Close message" onClick={()=>setNotice('')}>×</button></div>}{confirmBar}
 {newOpen&&<div className="kDrawer" onMouseDown={e=>{if(e.target===e.currentTarget)setNewOpen(false)}} onKeyDown={e=>{if(e.key==='Escape')setNewOpen(false)}}><div className="kPanel" role="dialog" aria-modal="true" aria-label="New product"><form ref={productFormRef} key={d._key||'new'} onSubmit={e=>create(e,'product')}>
  <div className="kRow between"><h2>{productDraft?'New product (copy)':'New product'}</h2><button type="button" className="kBtn sm" aria-label="Close" autoFocus onClick={()=>setNewOpen(false)}>✕</button></div>
- <p className="kNote">Four short steps. Nothing is saved until you press Create. Fields marked * are required.{productDraft&&<> <button type="button" className="linkBtn" onClick={()=>{setProductDraft(null);setPickedFiles([])}}>Clear the copy</button></>}</p>
- <section className="kStep"><h3><span>1</span>Photos</h3><label className="kDrop"><b>Choose photos / video *</b><span>The first one becomes the main photo. Big phone photos are made smaller automatically.</span><input name="images" type="file" accept="image/*,video/mp4,video/webm" multiple required onChange={e=>setPickedFiles(Array.from(e.target.files||[]))}/></label><FilePreview files={pickedFiles}/></section>
+ <p className="kNote">Four short steps. Nothing is saved until you press Create. Fields marked * are required.{productDraft&&<> <button type="button" className="linkBtn" onClick={()=>{setProductDraft(null);setPickedFiles([]);setLibPicks([])}}>Clear the copy</button></>}</p>
+ <section className="kStep"><h3><span>1</span>Photos</h3><label className="kDrop"><b>Choose photos / video *</b><span>The first one becomes the main photo. Big phone photos are made smaller automatically. You can also paste a photo (Ctrl+V).</span><input type="file" accept="image/*,video/mp4,video/webm" multiple onChange={e=>{const add=Array.from(e.target.files||[]);e.target.value='';setPickedFiles(p=>[...p,...add])}}/></label><FilePreview files={pickedFiles} onRemove={i=>setPickedFiles(p=>p.filter((_,j)=>j!==i))}/>
+  <div className="kRow"><button type="button" className="kBtn" onClick={()=>setPickerOpen(true)}><Images aria-hidden="true"/>Choose from Photos</button>{libPicks.length>0&&<span className="kNote">{plural(libPicks.length,'photo')} from Photos{pickedFiles.length?', added after your files':''}</span>}</div>
+  {libPicks.length>0&&<div className="filePreview">{libPicks.map((p,i)=><figure key={p.id}><img src={p.url} alt={p.name||''}/><figcaption>{!pickedFiles.length&&i===0?'MAIN · ':''}{p.name}</figcaption><button type="button" className="kX" aria-label={`Remove ${p.name||'photo'}`} onClick={()=>setLibPicks(l=>l.filter(x=>x.id!==p.id))}>×</button></figure>)}</div>}</section>
  <section className="kStep"><h3><span>2</span>Details</h3><Field label="Product name *" name="name" defaultValue={d.name} required/><div className="kTwo"><label className="caField">Category *<select name="category_id" required defaultValue={draftCat}><option value="">Select category</option>{activeCategories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label><Field label="SKU" name="sku" placeholder="Automatic if empty"/></div><label className="caField">Brand (optional)<select name="brand_id" defaultValue={d.brand_id||''}><option value="">No brand</option>{activeBrands.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label><label className="caField">Description<textarea name="description" rows={5} defaultValue={d.description||''} placeholder={"First line: short description.\nThen one feature per line — Color: Brown\n\nAfter an empty line: the long description."}/></label><div className="kTwo"><Field label="Materials" name="materials" defaultValue={d.materials||''}/><Field label="Dimensions" name="dimensions" defaultValue={d.dimensions||''}/></div></section>
  <section className="kStep"><h3><span>3</span>Price & stock</h3><div className="kTwo"><Field label="Price the customer pays ($) *" name="price" type="number" step="0.01" min="0" defaultValue={d.price??''} required/><Field label="Original price, crossed out ($)" name="compare_at_price" type="number" step="0.01" min="0" defaultValue={d.compare_at_price??''}/><Field label="Your cost per bag ($) *" name="cost" type="number" step="0.01" min="0" defaultValue={d.unit_cost??''} required/><label className="caField">Bags you have now *<input name="opening_stock" type="number" min="0" step="1" required value={openingQty} onChange={e=>setOpeningQty(e.target.value)}/>{openingQty!==''&&Number(openingQty)===0?<small className="fieldWarn">With 0 bags the product shows as SOLD OUT.</small>:<small>Saved in Inventory as OPENING STOCK.</small>}</label><Field label="Weight packed (lb)" name="weight" type="number" step="0.001" min="0" defaultValue={d.weight??''}/><Field label="Low stock alert (default 2)" name="low_stock_threshold" type="number" step="1" min="0" defaultValue={d.low_stock_threshold??''}/></div></section>
  <section className="kStep"><h3><span>4</span>Publish</h3><label className="kCheck"><input name="publish_shop" type="checkbox" defaultChecked={d.active!==false}/> Show in the shop now</label><label className="kCheck"><input name="featured" type="checkbox" defaultChecked={!!d.featured}/> Featured product</label><div><button className="kBtn pri" disabled={uploading}>{uploading?(uploadStep||'Uploading…'):'Create product + upload photos'}</button></div></section>
 </form></div></div>}
+{newOpen&&pickerOpen&&<LibraryPicker setNotice={setNotice} onClose={()=>setPickerOpen(false)} onPick={rows=>{setLibPicks(l=>[...l,...rows.filter(r=>!l.some(x=>x.id===r.id))]);setPickerOpen(false)}}/>}
 {viewingOrder&&<OrderDetailModal order={viewingOrder} onClose={()=>setViewingOrder(null)} onSave={saveOrder}/>}
 {editingProduct&&<div className="editModalBackdrop" onMouseDown={e=>{if(e.target===e.currentTarget)closeProductEdit()}}><div className="editModal"><div className="editModalHead"><div><small>EDIT PRODUCT</small><h2>{editingProduct.name}</h2></div><button type="button" onClick={closeProductEdit}>×</button></div><PhotoManager product={editingProduct} setNotice={setNotice} setAsk={setAsk} onChanged={()=>{photosDirty.current=true}}/><form className="editModalForm" onSubmit={saveProductEdit}><label>Product name<input name="name" defaultValue={editingProduct.name||''} required/></label><label>SKU<input name="sku" defaultValue={editingProduct.sku||''} required/></label><label>Brand<select name="brand_id" defaultValue={editingProduct.brand_id||''}><option value="">No brand</option>{brands.filter(b=>b.active!==false||b.id===editingProduct.brand_id).map(b=><option key={b.id} value={b.id}>{b.name}{b.active===false?' (inactive)':''}</option>)}</select></label><label>Category<select name="category" defaultValue={editingProduct.category||''} required><option value="">Select category</option>{categories.filter(c=>c.active!==false||c.name===editingProduct.category).map(c=><option key={c.id} value={c.name}>{c.name}{c.active===false?' (inactive)':''}</option>)}{editingProduct.category&&!categories.some(c=>c.name===editingProduct.category)&&<option value={editingProduct.category}>{editingProduct.category} (no longer a category)</option>}</select></label><label>Price the customer pays<input name="price" type="number" step="0.01" defaultValue={editingProduct.price??''}/></label><label>Original price, crossed out (only if on sale)<input name="compare_at_price" type="number" step="0.01" defaultValue={editingProduct.compare_at_price??''}/></label><label>Unit cost<input name="unit_cost" type="number" step="0.01" defaultValue={editingProduct.unit_cost??''}/></label><label>Weight (lb)<input name="weight" type="number" step="0.001" min="0" defaultValue={editingProduct.weight??''}/></label><label>Low stock alert<input name="low_stock_threshold" type="number" defaultValue={editingProduct.low_stock_threshold??2}/></label>{editingProduct.sku!==CUSTOM_SKU&&<label>Bags in stock now<input name="stock_now" type="number" min="0" step="1" defaultValue={stockById[editingProduct.id]??0}/><small className="kHint">Type the real count. The difference is saved in Inventory.</small></label>}<label>Materials<input name="materials" defaultValue={editingProduct.materials||''}/></label><label>Dimensions<input name="dimensions" defaultValue={editingProduct.dimensions||''}/></label><label className="full">Description — first line: short description · next lines: one feature each (Color: Brown) · after an empty line: long description<textarea name="description" rows={9} defaultValue={editingProduct.description||''}/></label><label>Status<select name="active" defaultValue={editingProduct.active===false?'false':'true'}><option value="true">Active / Published</option><option value="false">Archived / Hidden</option></select></label><label className="editCheck"><input name="featured" type="checkbox" defaultChecked={!!editingProduct.featured}/> Featured product</label><div className="editModalActions full"><button type="button" onClick={closeProductEdit}>CANCEL</button><button type="submit">SAVE PRODUCT</button></div></form></div></div>}
 {editingMovement&&<div className="editModalBackdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setEditingMovement(null)}}><div className="editModal inventoryEditModal"><div className="editModalHead"><div><small>EDIT INVENTORY MOVEMENT</small><h2>{editingMovement.products?.name||'Inventory entry'}</h2></div><button type="button" onClick={()=>setEditingMovement(null)}>×</button></div><form className="editModalForm" onSubmit={saveMovementEdit}><label className="full">Product<select name="product_id" defaultValue={editingMovement.product_id||''} required>{productsList.map(p=><option key={p.id} value={p.id}>{p.name} · {p.sku}</option>)}{editingMovement.product_id&&!productsList.some(p=>p.id===editingMovement.product_id)&&<option value={editingMovement.product_id}>{editingMovement.products?.name||'Product'} · {editingMovement.products?.sku||''} (archived)</option>}</select></label><label>Quantity<input name="qty" type="number" defaultValue={editingMovement.qty??editingMovement.quantity??''} required/></label><label>Movement type<select name="movement_type" defaultValue={editingMovement.movement_type||'ADJUST'}><option value="IN">IN / RECEIVED</option><option value="OUT">OUT</option><option value="RETURN">RETURN</option><option value="ADJUST">ADJUSTMENT</option><option value="PRODUCTION_IN">PRODUCTION IN</option></select></label><label className="full">Reason / reference<textarea name="note" defaultValue={String(editingMovement.note||'').replace(/^OPENING STOCK\s*[·-]?\s*/i,'')}/></label><div className="editModalActions full"><button type="button" onClick={()=>setEditingMovement(null)}>CANCEL</button><button type="submit">SAVE MOVEMENT</button></div></form></div></div>}
@@ -495,19 +540,98 @@ function CustomerTable({profiles,orders,subscribers}){
 
 // Photos of one product, in shop order. Changes are saved at once (they don't wait for SAVE PRODUCT).
 function PhotoManager({product,setNotice,setAsk,onChanged}){
- const [media,setMedia]=useState(null),[busy,setBusy]=useState(''),[picked,setPicked]=useState([]);const fileRef=useRef(null);
+ const [media,setMedia]=useState(null),[busy,setBusy]=useState(''),[picked,setPicked]=useState([]),[picking,setPicking]=useState(false);const fileRef=useRef(null);
+ const addFromLibrary=rows=>{setPicking(false);run('Adding…',async()=>{await attachUrls(product.id,rows.map(r=>r.url));setNotice(`${plural(rows.length,'photo')} from Photos added to "${product.name}".`)})};
  const reload=async()=>{const {data,error}=await supabase.from('product_media').select('id,url,media_type,sort_order').eq('product_id',product.id).order('sort_order',{ascending:true});if(error){setNotice(error.message);return}setMedia(data||[])};
  useEffect(()=>{reload()},[product.id]);
  const run=async(label,fn)=>{setBusy(label);try{await fn();onChanged()}catch(e){setNotice(`Photos: ${e?.message||String(e)}`)}finally{await reload();setBusy('')}};
  // Writes sort_order 0..n-1 in the new order; only rows whose position changed are updated.
  const reorder=list=>run('Saving order…',async()=>{for(let i=0;i<list.length;i++){if(list[i].sort_order===i)continue;const {error}=await supabase.from('product_media').update({sort_order:i}).eq('id',list[i].id);if(error)throw error}});
  const move=(i,to)=>{const list=[...media];const [m]=list.splice(i,1);list.splice(to,0,m);reorder(list)};
- const remove=m=>setAsk({text:media.length===1?'Delete the only photo? The product will show without a photo until you upload one.':'Delete this photo from the product?',yes:'DELETE PHOTO',run:()=>run('Deleting…',async()=>{const {error}=await supabase.from('product_media').delete().eq('id',m.id);if(error)throw error;const path=mediaPath(m.url);if(path){const {error:se}=await supabase.storage.from(MEDIA_BUCKET).remove([path]);if(se)setNotice(`Photo removed from the product, but the file stayed in storage: ${se.message}`)}const rest=media.filter(x=>x.id!==m.id);for(let i=0;i<rest.length;i++){if(rest[i].sort_order!==i){const {error:oe}=await supabase.from('product_media').update({sort_order:i}).eq('id',rest[i].id);if(oe)throw oe}}})});
+ const remove=m=>setAsk({text:media.length===1?'Delete the only photo? The product will show without a photo until you upload one.':'Delete this photo from the product?',yes:'DELETE PHOTO',run:()=>run('Deleting…',async()=>{const {error}=await supabase.from('product_media').delete().eq('id',m.id);if(error)throw error;const path=mediaPath(m.url);if(path&&!path.startsWith('library/')){const {error:se}=await supabase.storage.from(MEDIA_BUCKET).remove([path]);if(se)setNotice(`Photo removed from the product, but the file stayed in storage: ${se.message}`)}const rest=media.filter(x=>x.id!==m.id);for(let i=0;i<rest.length;i++){if(rest[i].sort_order!==i){const {error:oe}=await supabase.from('product_media').update({sort_order:i}).eq('id',rest[i].id);if(oe)throw oe}}})});
  const upload=()=>run('Uploading…',async()=>{const start=media.length?Math.max(...media.map(m=>Number(m.sort_order)||0))+1:0;await uploadMedia(product.id,picked,start,setBusy);setPicked([]);if(fileRef.current)fileRef.current.value='';setNotice(`${picked.length} file${picked.length===1?'':'s'} added to "${product.name}".`)});
  return <section className="photoManager"><div className="photoManagerHead"><small>PHOTOS · the first one is the main photo</small>{busy&&<b>{busy}</b>}</div>
   {media===null?<p>Loading photos…</p>:!media.length?<p className="fieldWarn">This product has no photos yet.</p>:<div className="photoGrid">{media.map((m,i)=><figure key={m.id} className={i===0?'isMain':''}>{String(m.media_type||'image').startsWith('video')?<video src={m.url} muted/>:<img src={m.url} alt={`Photo ${i+1}`}/>}<figcaption>{i===0?'MAIN':`#${i+1}`}</figcaption><div className="photoActions"><button type="button" disabled={!!busy||i===0} onClick={()=>move(i,i-1)} aria-label="Move left">◀</button><button type="button" disabled={!!busy||i===media.length-1} onClick={()=>move(i,i+1)} aria-label="Move right">▶</button>{i>0&&<button type="button" disabled={!!busy} onClick={()=>move(i,0)}>MAKE MAIN</button>}<button type="button" className="dangerBtn" disabled={!!busy} onClick={()=>remove(m)}>DELETE</button></div></figure>)}</div>}
-  <div className="photoUpload"><label className="caField">Add photos / video<input ref={fileRef} type="file" accept="image/*,video/mp4,video/webm" multiple onChange={e=>setPicked(Array.from(e.target.files||[]))}/></label><FilePreview files={picked}/>{picked.length>0&&<button type="button" disabled={!!busy} onClick={upload}>UPLOAD {picked.length} FILE{picked.length===1?'':'S'}</button>}</div>
+  <div className="photoUpload"><label className="caField">Add photos / video<input ref={fileRef} type="file" accept="image/*,video/mp4,video/webm" multiple onChange={e=>setPicked(Array.from(e.target.files||[]))}/></label><FilePreview files={picked}/>{picked.length>0&&<button type="button" disabled={!!busy} onClick={upload}>UPLOAD {picked.length} FILE{picked.length===1?'':'S'}</button>}<button type="button" className="kBtn" disabled={!!busy} onClick={()=>setPicking(true)}><Images aria-hidden="true"/>Choose from Photos</button></div>
+  {picking&&<LibraryPicker setNotice={setNotice} onClose={()=>setPicking(false)} onPick={addFromLibrary}/>}
  </section>;
+}
+
+// Modal grid of the Photos library; gives back the chosen rows in the order they were clicked (first = first in the product).
+function LibraryPicker({onClose,onPick,setNotice}){
+ const [rows,setRows]=useState(null),[q,setQ]=useState(''),[sel,setSel]=useState([]);
+ useEffect(()=>{supabase.from('media_library').select('*').order('created_at',{ascending:false}).then(({data,error})=>{if(error)setNotice(`Photos: ${error.message}`);setRows(data||[])})},[]);
+ const needle=q.trim().toLowerCase(),list=(rows||[]).filter(r=>String(r.name||'').toLowerCase().includes(needle));
+ const toggle=r=>setSel(s=>s.some(x=>x.id===r.id)?s.filter(x=>x.id!==r.id):[...s,r]);
+ return <div className="kPickBack" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}} onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();onClose()}}}><div className="kPick" role="dialog" aria-modal="true" aria-label="Choose from Photos">
+  <div className="kRow between"><h2>Choose from Photos</h2><button type="button" className="kBtn sm" aria-label="Close" autoFocus onClick={onClose}>✕</button></div>
+  <input className="kPickSearch" type="search" placeholder="Search by name" aria-label="Search photos" value={q} onChange={e=>setQ(e.target.value)}/>
+  {rows===null?<p className="kNote">Loading photos…</p>:!list.length?<p className="kNote">{rows.length?'No photo matches that name.':'The library is empty. Add photos in the Photos tab first.'}</p>:<div className="kLib">{list.map(r=>{const n=sel.findIndex(x=>x.id===r.id);return <button type="button" key={r.id} className="kLibPick" aria-pressed={n>=0} onClick={()=>toggle(r)}><img src={r.url} alt="" loading="lazy"/>{n>=0&&<span className="kPickNo">{n+1}</span>}<span className="kLibName">{r.name||'Untitled'}</span></button>})}</div>}
+  <div className="kRow end"><button type="button" className="kBtn" onClick={onClose}>Cancel</button><button type="button" className="kBtn pri" disabled={!sel.length} onClick={()=>onPick(sel)}>{sel.length?`Add ${plural(sel.length,'photo')}`:'Select photos'}</button></div>
+ </div></div>;
+}
+
+// Photos tab: the business's photo library, plus every product photo (read-only) so all the store's photos are in one place.
+function PhotosAdmin({setNotice,setAsk}){
+ const [lib,setLib]=useState(null),[pm,setPm]=useState([]),[products,setProducts]=useState([]),[filter,setFilter]=useState('All'),[q,setQ]=useState(''),[busy,setBusy]=useState(''),[drag,setDrag]=useState(false),[sel,setSel]=useState([]),[renaming,setRenaming]=useState(null),[useFor,setUseFor]=useState(null),[target,setTarget]=useState('');
+ const fileRef=useRef(null);
+ const load=async()=>{const [{data:l,error:le},{data:m,error:me},{data:p,error:pe}]=await Promise.all([supabase.from('media_library').select('*').order('created_at',{ascending:false}),supabase.from('product_media').select('id,product_id,url,media_type,sort_order').order('sort_order',{ascending:true}),supabase.from('products').select('id,name,active').order('name')]);
+  const err=le||me||pe;if(err)setNotice(`Photos: ${err.message}`);setLib(l||[]);setPm(m||[]);setProducts(p||[])};
+ useEffect(()=>{load()},[]);
+ const addFiles=async list=>{const files=Array.from(list||[]);if(!files.length)return;if(busy){setNotice('Wait for the current upload to finish.');return}
+  const ok=files.filter(f=>LIB_TYPE.test(f.type)||isHeic(f)),skipped=files.length-ok.length;
+  if(!ok.length){setNotice('Only photos can be added here: JPEG, PNG, WebP, GIF or HEIC.');return}
+  const failed=[];let added=0;
+  for(let i=0;i<ok.length;i++){setBusy(`Uploading ${i+1} of ${ok.length}…`);try{await uploadToLibrary(ok[i]);added++}catch(e){failed.push(e?.message||String(e))}}
+  setBusy('');await load();
+  setNotice([added&&`${plural(added,'photo')} added to the library.`,skipped&&`${plural(skipped,'file')} skipped (not a photo).`,...failed].filter(Boolean).join('\n'))};
+ // Paste works anywhere on the tab; the listener lives only while this tab is open.
+ useEffect(()=>{const onPaste=e=>{const files=clipboardImages(e);if(!files.length)return;e.preventDefault();addFiles(files)};window.addEventListener('paste',onPaste);return()=>window.removeEventListener('paste',onPaste)});
+ const names=Object.fromEntries(products.map(p=>[p.id,p.name])),needle=q.trim().toLowerCase(),hit=s=>String(s||'').toLowerCase().includes(needle);
+ const libItems=(lib||[]).filter(r=>hit(r.name));
+ const pos={},prodItems=pm.filter(m=>!String(m.media_type||'image').startsWith('video')).map(m=>{pos[m.product_id]=(pos[m.product_id]||0)+1;return {...m,product:names[m.product_id]||'Product',n:pos[m.product_id]}}).filter(m=>hit(m.product));
+ const usedBy=url=>pm.filter(m=>m.url===url).length;
+ const fileName=(name,r)=>{const ext=/\.([a-z0-9]{2,5})$/i.exec(String(r.path||r.url).split('?')[0])?.[1]||'jpg';return `${String(name||'photo').replace(/\.[a-z0-9]{2,5}$/i,'')}.${ext}`};
+ const copyLink=async url=>setNotice(await copyText(url)?'Link copied.':`Your browser blocked copying. Copy this link:\n${url}`);
+ const download=async(url,name)=>{try{const res=await fetch(url);if(!res.ok)throw new Error(res.statusText);const href=URL.createObjectURL(await res.blob());const a=Object.assign(document.createElement('a'),{href,download:name});document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(href),2000)}catch{window.open(url,'_blank','noopener')}};
+ const rename=async(r,name)=>{const clean=String(name||'').trim();if(!clean){setNotice('The name cannot be empty.');return}try{const {error}=await supabase.from('media_library').update({name:clean}).eq('id',r.id);if(error)throw error;setRenaming(null);setNotice('Photo renamed.');await load()}catch(e){setNotice(`Photos: ${e.message}`)}};
+ const useIn=async()=>{if(!target){setNotice('Pick a product first.');return}const rows=useFor;setBusy('Adding to product…');try{await attachUrls(target,rows.map(r=>r.url));setNotice(`${plural(rows.length,'photo')} added to "${names[target]||'the product'}". The first photo of a product is its main photo; change the order in Products → Edit.`);setUseFor(null);setSel([]);await load()}catch(e){setNotice(`Photos: ${e.message}`)}finally{setBusy('')}};
+ // A file still used by a product_media row stays in storage; only the library row goes.
+ const remove=rows=>{const used=rows.filter(r=>usedBy(r.url)>0).length,one=rows.length===1;
+  setAsk({text:`Delete ${one?`"${rows[0].name||'this photo'}"`:plural(rows.length,'photo')} from the library?${used?` ${one?'It is':`${used} of them are`} used by a product: the library entry is removed, but the file stays so the product keeps its photo.`:' This cannot be undone.'}`,yes:one?'DELETE PHOTO':`DELETE ${rows.length} PHOTOS`,run:async()=>{setBusy('Deleting…');try{
+   const {data:live,error:ue}=await supabase.from('product_media').select('url').in('url',rows.map(r=>r.url));if(ue)throw ue;const keep=new Set((live||[]).map(m=>m.url));
+   const {error}=await supabase.from('media_library').delete().in('id',rows.map(r=>r.id));if(error)throw error;
+   const paths=rows.filter(r=>!keep.has(r.url)&&r.path).map(r=>r.path),kept=rows.length-paths.length;let msg=`${plural(rows.length,'photo')} deleted from the library.`;
+   if(paths.length){const {error:se}=await supabase.storage.from(MEDIA_BUCKET).remove(paths);if(se)msg+=` The files stayed in storage: ${se.message}`}
+   if(kept)msg+=` ${plural(kept,'file')} kept because a product uses it.`;
+   setSel(s=>s.filter(id=>!rows.some(r=>r.id===id)));setNotice(msg);await load()}catch(e){setNotice(`Photos: ${e.message}`)}finally{setBusy('')}}})};
+ const toggle=id=>setSel(s=>s.includes(id)?s.filter(x=>x!==id):[...s,id]);
+ const picked=sel.map(id=>(lib||[]).find(r=>r.id===id)).filter(Boolean);
+ const showLib=filter!=='Product photos',showProd=filter!=='Library',empty=lib&&!lib.length;
+ const open=()=>fileRef.current?.click();
+ return <div className="kPhotos" onDragOver={e=>{if(Array.from(e.dataTransfer?.types||[]).includes('Files')){e.preventDefault();setDrag(true)}}} onDragLeave={e=>{if(!e.currentTarget.contains(e.relatedTarget))setDrag(false)}} onDrop={e=>{if(!e.dataTransfer?.files?.length)return;e.preventDefault();setDrag(false);addFiles(e.dataTransfer.files)}}>
+  <Head eyebrow="Catalog" title="Photos"><button type="button" className="kBtn pri" disabled={!!busy} onClick={open}>Choose photos</button></Head>
+  <input ref={fileRef} type="file" accept={LIB_ACCEPT} multiple hidden onChange={e=>{const f=Array.from(e.target.files||[]);e.target.value='';addFiles(f)}}/>
+  <p className="kSub">The store's photo library. Add photos here, then copy their link or use them in a product.</p>
+  <div className={`kDropZone${drag?' on':''}${empty?' big':''}${busy?' busy':''}`} role="button" tabIndex={0} onClick={open} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}}}><Images aria-hidden="true"/><b>{busy||(drag?'Drop the photos to upload them':'Paste (Ctrl+V), drag photos here, or choose files')}</b><span>JPEG, PNG, WebP, GIF or HEIC. Big photos are made smaller automatically.</span></div>
+  <div className="kChips">{[['All',(lib||[]).length+prodItems.length],['Library',(lib||[]).length],['Product photos',prodItems.length]].map(([k,n])=><button type="button" key={k} className="kChip" aria-pressed={filter===k} onClick={()=>setFilter(k)}>{k}<i>{n}</i></button>)}<input className="kSearch" type="search" placeholder="Search by name" aria-label="Search photos by name" value={q} onChange={e=>setQ(e.target.value)}/></div>
+  {picked.length>0&&<div className="kBulk" role="region" aria-label="Selected photos"><b>{plural(picked.length,'photo')} selected</b><button type="button" className="kBtn" disabled={!!busy} onClick={()=>{setTarget('');setUseFor(picked)}}>Use in product</button><button type="button" className="kBtn danger" disabled={!!busy} onClick={()=>remove(picked)}>Delete</button><button type="button" className="kBtn" onClick={()=>setSel([])}>Clear</button></div>}
+  {useFor&&<div className="kCard kUse"><b>Add {plural(useFor.length,'photo')} to a product</b><select value={target} onChange={e=>setTarget(e.target.value)} aria-label="Product"><option value="">Select product</option>{products.map(p=><option key={p.id} value={p.id}>{p.name}{p.active===false?' (hidden)':''}</option>)}</select><div className="kRow"><button type="button" className="kBtn pri" disabled={!target||!!busy} onClick={useIn}>Add to product</button><button type="button" className="kBtn" onClick={()=>setUseFor(null)}>Cancel</button></div></div>}
+  {lib===null?<div className="kCard kEmpty">Loading photos…</div>:<>
+   {showLib&&(libItems.length?<>{filter==='All'&&<h2 className="kH2">Library</h2>}<div className="kLib">{libItems.map(r=>{const used=usedBy(r.url),on=sel.includes(r.id);return <figure className={`kLibCard${on?' on':''}`} key={r.id}>
+    <label className="kLibCheck" title="Select"><input type="checkbox" checked={on} onChange={()=>toggle(r.id)} aria-label={`Select ${r.name||'photo'}`}/></label>
+    <a href={r.url} target="_blank" rel="noreferrer" className="kLibImg"><img src={r.url} alt={r.name||''} loading="lazy"/></a>
+    <figcaption>{renaming===r.id?<form className="kRename" onSubmit={e=>{e.preventDefault();rename(r,new FormData(e.currentTarget).get('name'))}}><input name="name" defaultValue={r.name||''} autoFocus aria-label="Photo name" onKeyDown={e=>{if(e.key==='Escape')setRenaming(null)}}/><div className="kRow"><button className="kBtn sm pri">Save</button><button type="button" className="kBtn sm" onClick={()=>setRenaming(null)}>Cancel</button></div></form>:<b title={r.name||''}>{r.name||'Untitled'}</b>}
+     <span className="kNote">{[fmtSize(r.size_bytes),r.width&&`${r.width}×${r.height}`,shortDay(r.created_at)].filter(Boolean).join(' · ')}</span>{used>0&&<span className="kPill blue">In {plural(used,'product photo')}</span>}</figcaption>
+    <div className="kLibActs"><button type="button" className="kBtn sm" onClick={()=>copyLink(r.url)}>Copy link</button><a className="kBtn sm" href={r.url} target="_blank" rel="noreferrer">Open</a><button type="button" className="kBtn sm" onClick={()=>download(r.url,fileName(r.name,r))}>Download</button><button type="button" className="kBtn sm" disabled={!!busy} onClick={()=>{setTarget('');setUseFor([r])}}>Use in product</button><button type="button" className="kBtn sm" onClick={()=>setRenaming(r.id)}>Rename</button><button type="button" className="kBtn sm danger" disabled={!!busy} onClick={()=>remove([r])}>Delete</button></div>
+   </figure>})}</div></>:!empty&&<div className="kCard kEmpty">No library photo matches “{q}”.</div>)}
+   {showProd&&(prodItems.length?<>{filter==='All'&&<h2 className="kH2">Product photos</h2>}{filter==='All'&&<p className="kSub">Photos of the products, read-only here. Change them in Products → Edit.</p>}<div className="kLib">{prodItems.map(m=><figure className="kLibCard" key={m.id}>
+    <a href={m.url} target="_blank" rel="noreferrer" className="kLibImg"><img src={m.url} alt={m.product} loading="lazy"/></a>
+    <figcaption><b title={m.product}>{m.product}</b><span className="kNote">{m.n===1?'Main photo':`Photo ${m.n}`}</span></figcaption>
+    <div className="kLibActs"><button type="button" className="kBtn sm" onClick={()=>copyLink(m.url)}>Copy link</button><a className="kBtn sm" href={m.url} target="_blank" rel="noreferrer">Open</a><button type="button" className="kBtn sm" onClick={()=>download(m.url,fileName(`${m.product} ${m.n}`,m))}>Download</button></div>
+   </figure>)}</div></>:filter==='Product photos'&&<div className="kCard kEmpty">{q?`No product photo matches “${q}”.`:'No product photos yet.'}</div>)}
+  </>}
+ </div>;
 }
 
 function CouponFields({r={}}){
