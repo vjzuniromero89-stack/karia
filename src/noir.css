@@ -179,7 +179,8 @@ html.noir .noirSplit h2{font-size:clamp(34px,4.4vw,56px)!important;margin:0!impo
 html.noir .noirHeroSplit .noirHeroText h1{font-size:clamp(44px,5.6vw,96px)!important}
 .noirStage{position:relative;aspect-ratio:3/2;width:100%;overflow:hidden;background:var(--n-bg2);box-shadow:0 40px 80px rgba(0,0,0,.45)}
 .noirStage .noirSlide::after{display:none}
-.noirStage .noirSlide img{object-fit:cover;object-position:center}
+/* contain: 3:2 photos fill the frame exactly; other shapes (the square camel tote) are shown whole instead of cut */
+.noirStage .noirSlide img{object-fit:contain;object-position:center}
 .noirStageName{position:absolute;left:18px;bottom:18px;z-index:3;font:400 13px var(--n-sans);letter-spacing:.18em;text-transform:uppercase;color:#1b1916;background:rgba(239,233,223,.86);padding:7px 12px}
 .noirHeroSplit .noirHeroNav{right:16px;bottom:14px;left:auto}
 .noirHeroSplit .noirHeroNav span{background:rgba(15,14,13,.55);padding:4px 10px}
@@ -210,7 +211,7 @@ html.noir .catalogBuy b,html.noir .priceSale b{font-size:18px!important}
 html.noir .catalogBuy button{font:500 12px var(--n-sans)!important;letter-spacing:.16em!important;padding:12px 18px!important;border:1px solid var(--n-fg)!important;color:var(--n-fg)!important;opacity:1!important;min-height:44px}
 html.noir .catalogBuy button:hover:not(:disabled){background:var(--n-fg)!important;color:#0f0e0d!important}
 html.noir .catalogBuy button:disabled,html.noir .productAdd:disabled{background:transparent!important;border:1px dashed #6e665c!important;color:#c9bfb2!important;opacity:1!important}
-html.noir .newBadge{font:600 11px var(--n-sans)!important;letter-spacing:.18em!important}
+html.noir .newBadge{font:600 12px var(--n-sans)!important;letter-spacing:.16em!important}
 /* forms (contact, checkout, reviews) */
 html.noir .checkoutForm label{font:500 13px var(--n-sans)!important;letter-spacing:.08em!important;color:var(--n-soft)!important;text-transform:uppercase}
 html.noir .checkoutForm input,html.noir .checkoutForm textarea,html.noir .checkoutForm select{font:400 16px var(--n-sans)!important;padding:13px 14px!important;margin-top:8px}
@@ -243,3 +244,117 @@ html.noir .aboutValues b{color:var(--n-gold)}
 .aboutValues p{margin:8px 0 0;font-size:16px;line-height:1.65}
 .aboutActions{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 @media (max-width:850px){.aboutStrip,.aboutValues{grid-template-columns:1fr}}
+
+/* V7.53 — store review: nothing under 12px, guiding empty states, tidy footer, trust lines near the buttons */
+/* neutral pieces: they also work in the classic look (no html.noir) */
+.checkoutSummary.isEmpty .checkoutLine,.checkoutSummary.isEmpty .checkoutTotal{display:none}
+.checkoutEmpty{font-size:15px;line-height:1.6;margin:10px 0 0}
+.checkoutSecure{font-size:13px;line-height:1.5;margin:14px 0 0;opacity:.85}
+.productTrust{font-size:13px;letter-spacing:.06em;margin:16px 0 0}
+.productNote{font-size:14px;line-height:1.6;margin:8px 0 14px}
+.productNote a{color:inherit}
+.footCols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px}
+.footHead{display:block;font-size:12px;letter-spacing:.2em;text-transform:uppercase;margin-bottom:4px}
+.newsletterLead{font-size:14px;margin:10px 0 0}
+.legalNav{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0 10px}
+.legalNav a{font-size:14px;padding:9px 14px;border:1px solid currentColor;text-decoration:none;color:inherit;opacity:.75}
+.legalNav a[aria-current]{opacity:1;font-weight:600}
+.legalHelp{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin:56px 0 20px;padding-top:28px;border-top:1px solid #cfc2b2}
+.legalHelp p{margin:0;font-size:17px}
+.emptyState{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:34px}
+.emptyState b{font-size:22px}
+.emptyState span{font-size:15px;line-height:1.6}
+.emptyState .cta{margin-top:8px}
+@media (min-width:851px){footer{grid-template-columns:1.1fr 2fr 1.1fr}}
+@media (max-width:520px){.footCols{grid-template-columns:1fr 1fr}}
+
+/* noir: small labels and the footer */
+html.noir .newsletter small,html.noir .checkoutIntro small,html.noir .checkoutSummary>small,html.noir .checkoutSuccess>small,html.noir .contactInfo>small{font-size:12px!important;letter-spacing:.22em!important}
+html.noir .copyright{font-size:13px!important;letter-spacing:.06em!important;color:var(--n-mut)!important;background:none!important;-webkit-text-fill-color:currentColor!important}
+html.noir header .bag b{font-size:12px!important;min-width:19px;height:19px;line-height:19px!important;padding:0 5px;border-radius:999px;text-align:center}
+html.noir footer p{font-size:15px;line-height:1.6}
+html.noir .footLinks{gap:10px!important}
+html.noir .footLinks a{font-size:15px!important;letter-spacing:.02em!important}
+html.noir .footHead{color:var(--n-gold);font-weight:500;font-family:var(--n-sans)}
+html.noir .newsletterLead{color:var(--n-soft)!important}
+html.noir .newsletter input{font-size:16px!important;padding:13px 14px!important}
+html.noir .newsletter button{min-width:50px;font-size:20px}
+html.noir .newsletterNote{font-size:14px!important;color:var(--n-soft)!important}
+html.noir .dashLink{display:inline-flex;align-items:center;min-height:44px;padding:10px 18px!important;font:500 13px var(--n-sans)!important;letter-spacing:.14em!important;text-decoration:none!important}
+html.noir .aboutActions .dashLink{margin:0}
+html.noir .dashLink:hover{border-color:var(--n-gold)!important;color:var(--n-gold)!important}
+html.noir .emptyState b{font:400 26px var(--n-serif);color:var(--n-fg)}
+html.noir .emptyState span{color:var(--n-soft)}
+
+/* noir: legal pages */
+html.noir .legalText{max-width:720px}
+html.noir .legalText section{border-top:1px solid var(--n-line);padding-top:26px;margin-top:30px}
+html.noir .legalText h2{font-size:28px!important;margin:0 0 12px!important}
+html.noir .legalText p,html.noir .legalText li{font-size:17px!important;line-height:1.75!important;color:var(--n-soft)!important}
+html.noir .legalText a{color:var(--n-gold)!important}
+html.noir .legalNav a{border-color:var(--n-line);color:var(--n-fg);opacity:1}
+html.noir .legalNav a[aria-current]{border-color:var(--n-gold);color:var(--n-gold)}
+html.noir .legalHelp{border-color:var(--n-line);max-width:720px}
+
+/* noir: product page */
+html.noir .productFact{font-size:14px!important;padding:16px 0!important}
+html.noir .productFact span{font-size:12px!important;letter-spacing:.18em}
+html.noir .productFact b{font-size:15px!important;font-weight:500!important}
+html.noir .productInfo .cardStars span{font-size:14px!important;color:var(--n-soft)!important}
+html.noir .productInfo>p:not(.productTrust):not(.productNote){font-size:16px;line-height:1.7}
+html.noir .productFeatures li{font-size:15px!important}
+html.noir .productAdd,html.noir .checkoutPay{font-size:13px!important;min-height:56px}
+html.noir .productTrust{color:var(--n-gold)!important;font-size:13px;letter-spacing:.07em;text-transform:uppercase}
+html.noir .productNote{color:var(--n-soft)!important}
+html.noir .productNote a{color:var(--n-fg)}
+html.noir .productNote a:hover{color:var(--n-gold)}
+html.noir .backShop{font-size:14px!important}
+html.noir .cartQty span{font-size:15px}
+@media (min-width:851px){html.noir .productGalleryWrap{position:sticky;top:100px;align-self:start}}
+
+/* noir: checkout and thank-you */
+html.noir .checkoutIntro h1{font-size:clamp(40px,5.4vw,72px)!important}
+html.noir .checkoutIntro p{font-size:17px}
+html.noir .checkoutTopNote{max-width:none!important;margin:0 0 24px!important}
+html.noir .checkoutAuthNotice{font-size:15px!important;line-height:1.6;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px 20px;padding:18px 22px!important}
+html.noir .checkoutSignIn{font-size:12px!important;padding:12px 18px!important;min-height:44px}
+html.noir .checkoutSummary h2{font-size:30px!important}
+html.noir .checkoutLine{font-size:15px!important}
+html.noir .checkoutTotal{font-size:18px!important}
+html.noir .checkoutItem span{font-size:14px!important;color:var(--n-mut)!important}
+html.noir .checkoutItem strong{font-size:15px}
+html.noir .checkoutCoupon button{font-size:12px!important;letter-spacing:.14em;padding:0 16px;min-height:48px}
+html.noir .checkoutLegal,html.noir .checkoutSecure{font-size:14px!important;color:var(--n-soft)!important;opacity:1!important}
+html.noir .checkoutLegal a{color:var(--n-fg)}
+html.noir .checkoutBack{font-size:14px!important;color:var(--n-soft)!important}
+html.noir .checkoutPay:disabled{color:#b9b0a4!important;border-color:#4a443c!important}
+html.noir .checkoutEmpty{color:var(--n-soft)}
+html.noir .checkoutEmpty a{color:var(--n-gold)}
+html.noir .checkoutPending{background:var(--n-bg3)!important;color:var(--n-soft)!important;border:1px solid var(--n-line);border-radius:0!important;font-size:15px}
+html.noir .checkoutSuccess p{font-size:17px}
+@media (max-width:850px){html.noir .checkoutPage{padding-left:20px!important;padding-right:20px!important}}
+
+/* noir: bag and account panels */
+html.noir .accountSwitch{display:block;width:100%;text-align:left;font-size:15px!important;padding:12px 0!important;text-decoration:none!important;color:var(--n-gold)!important}
+html.noir .accountSwitch:hover{text-decoration:underline!important}
+html.noir .accountIntro,html.noir .accountEmail{font-size:15px!important;line-height:1.6}
+html.noir .accountPanel input{font-size:16px!important;padding:14px 16px!important}
+html.noir .cartShipNote{font-size:14px!important;color:var(--n-soft)!important;opacity:1!important}
+html.noir .cartRow small{font-size:15px!important;letter-spacing:.04em}
+html.noir .cartRow:last-child{border-bottom:0!important}
+html.noir .cartTotal{font-size:17px}
+
+/* noir: home */
+.noirTrust{list-style:none;display:flex;justify-content:center;flex-wrap:wrap;gap:10px 34px;margin:0;padding:18px 24px;border-top:1px solid var(--n-line);border-bottom:1px solid var(--n-line)}
+.noirTrust li{font:500 13px var(--n-sans);letter-spacing:.16em;text-transform:uppercase;color:var(--n-soft)}
+.noirTrust li::before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--n-gold);margin-right:12px;vertical-align:middle}
+.noirSold{font-size:12px}
+.noirFacts span{font-size:12px}
+.noirFlowInfo p{font-size:16px}
+@media (max-width:850px){.noirHeroSplit .noirHeroNav span{font-size:12px}}
+@media (max-width:560px){
+  .noirTrust{flex-direction:column;align-items:center;gap:8px}
+  .noirFlowNav{display:grid;grid-template-columns:48px 1fr 48px;gap:10px;max-width:360px;margin:0 auto;padding:0 16px}
+  .noirFlowNav .noirBtn{justify-content:center}
+  .noirFlowNav .noirBtn:not(.ghost){grid-column:1/-1;grid-row:2}
+}

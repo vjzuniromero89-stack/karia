@@ -55,6 +55,9 @@ export function LegalPage({Header,kind,info={}}){
  const page=pages(info||{})[kind]||pages(info||{}).terms;
  return <div className="catalogPage">{Header}<main className="catalogMain narrowMain">
   <div className="catalogHero"><small>{page.small}</small><h1>{page.title}</h1><p>Last updated: {UPDATED}</p></div>
+  {/* a div, not <nav>: style.css turns every <nav> into the phone menu */}
+  <div className="legalNav" role="navigation" aria-label="Store policies">{LEGAL_LINKS.map(([t,h])=><a key={h} href={h} aria-current={h==='/'+kind?'page':undefined}>{t}</a>)}</div>
   <div className="aboutText legalText">{page.sections.map(([h,body])=><section key={h}><h2>{h}</h2>{body}</section>)}</div>
+  <div className="legalHelp"><p>Still have a question? We are happy to help.</p><a className="cta" href="/contact">Contact us</a></div>
  </main></div>;
 }

@@ -54,8 +54,9 @@ export function CartDrawer({open,setOpen,cart,setCart,checkout,notice,add}){
  const removeAll=k=>setCart(c=>c.filter(x=>cartKey(x)!==k));
  return <div className="accountBackdrop" onMouseDown={()=>setOpen(false)}><section className="accountPanel" role="dialog" aria-modal="true" aria-label="Your bag" onMouseDown={e=>e.stopPropagation()}><button className="accountClose" aria-label="Close" autoFocus onClick={()=>setOpen(false)}><X/></button><div className="accountBrand">KARIA</div><small className="accountEyebrow">YOUR BAG</small><h2>{cart.length?`${cart.length} piece${cart.length>1?"s":""}`:"Your bag is empty"}</h2>
   {notice&&<p className="cartNotice">{notice}</p>}
+  {!cart.length&&<p className="accountIntro">Find a handmade bag you love. It stays here while you keep looking.</p>}
   <div className="cartList">{groups.map(p=><div className="cartRow" key={p.key}><img src={p.img} alt=""/><div><b>{p.name}</b><small>{money(p.price)}</small><div className="cartQty"><button aria-label="Remove one" onClick={()=>removeOne(p.key)}>−</button><span>{p.qty}</span><button aria-label="Add one" onClick={()=>add(p)}>+</button></div></div><button className="cartRemove" aria-label={`Remove ${p.name}`} onClick={()=>removeAll(p.key)}>×</button></div>)}</div>
-  {cart.length>0?<><div className="cartTotal"><span>Subtotal</span><b>{money(cart.reduce((s,p)=>s+Number(p.price),0))}</b></div><p className="cartShipNote">Shipping is added at checkout.</p><button type="button" className="accountPrimary secureCheckoutBtn" onClick={e=>{e.preventDefault();e.stopPropagation();checkout()}}>SECURE CHECKOUT <ArrowRight/></button></>:<a className="accountPrimary accountLink" href="/shop">SHOP KARIA <ArrowRight/></a>}
+  {cart.length>0?<><div className="cartTotal"><span>Subtotal</span><b>{money(cart.reduce((s,p)=>s+Number(p.price),0))}</b></div><p className="cartShipNote">Shipping is added at checkout. Secure payment by Stripe.</p><button type="button" className="accountPrimary secureCheckoutBtn" onClick={e=>{e.preventDefault();e.stopPropagation();checkout()}}>SECURE CHECKOUT <ArrowRight/></button></>:<a className="accountPrimary accountLink" href="/shop">SHOP KARIA <ArrowRight/></a>}
  </section></div>
 }
 
@@ -111,6 +112,8 @@ export function ProductPage({products,id,add,Header,reviews=[],user,onSignIn,onS
    <div className="productFact"><span>AVAILABILITY</span><b>{out?"Sold out":`${p.stock} available`}</b></div>
    {!out&&<div className="productFact productQty"><span>QUANTITY</span><div className="cartQty"><button aria-label="Less" onClick={()=>setQty(n=>Math.max(1,n-1))}>−</button><span>{qty}</span><button aria-label="More" onClick={()=>setQty(n=>Math.min(max,n+1))}>+</button></div></div>}
    <button className="productAdd" onClick={()=>add(p,qty)} disabled={out}>{out?"SOLD OUT":<>ADD TO BAG · {money(Number(p.price)*qty)} <ArrowRight/></>}</button>
+   <p className="productTrust">Handmade · Ships from the US · Secure checkout by Stripe</p>
+   <p className="productNote">Shipping is added at checkout. See <a href="/shipping">Shipping</a> and <a href="/returns">Returns &amp; Refunds</a>, or <a href="/contact">ask us a question</a>.</p>
    <a className="backShop" href="/shop">← Continue shopping</a>
   </div>
   {desc.long&&<section className="relatedProducts productLong"><div className="catalogContext"><div><small>ABOUT THIS PRODUCT</small><h2>Description</h2></div></div><div className="aboutText">{desc.long.split(/\n+/).map((t,i)=><p key={i}>{t}</p>)}</div></section>}
@@ -181,10 +184,10 @@ export function OrdersPage({user,Header,onSignIn}){
   // an order that never reached payment is not an order for the customer
   setOrders((r.data||[]).filter(o=>String(o.status).toLowerCase()!=="pending"));
  })();return()=>{live=false}},[user]);
- const body=!user?<div className="catalogEmpty">Sign in to see your orders. <button className="dashLink" onClick={onSignIn}>SIGN IN</button></div>
+ const body=!user?<div className="catalogEmpty emptyState"><b>Sign in to see your orders.</b><span>Your orders, their status and tracking appear here once you sign in.</span><button className="cta" onClick={onSignIn}>SIGN IN <ArrowRight/></button></div>
   :orders===null?<div className="catalogEmpty">Loading your orders…</div>
   :error?<div className="catalogEmpty">We could not load your orders right now. Please try again later.</div>
-  :!orders.length?<div className="catalogEmpty">You have no orders yet. <a className="dashLink" href="/shop">SHOP KARIA</a></div>
+  :!orders.length?<div className="catalogEmpty emptyState"><b>No orders yet.</b><span>When you buy a KARIA bag, it appears here with its status and tracking.</span><a className="cta" href="/shop">SHOP KARIA <ArrowRight/></a></div>
   :<div className="myOrders">{orders.map(o=>{const status=String(o.status||"").toLowerCase(),items=o.order_items||[];return <article className="myOrder" key={o.id}>
     <div className="myOrderHead"><div><small>ORDER</small><h2>#{o.order_number||"—"}</h2></div><span className={`orderStatus ${status}`}>{status.toUpperCase()}</span></div>
     <p className="myOrderNote">{STATUS_TEXT[status]||""}</p>
@@ -218,7 +221,7 @@ export function ContactPage({Header,info={}}){
   </div></main></div>
 }
 
-const ABOUT_DEFAULT=["KARIA makes handmade crochet bags, stitch by stitch, in small batches.","Our handmade bags are crocheted by hand in small batches."+(CUSTOMIZE_ON?" With KARIA Atelier you can design your own: pick a style, choose every color, and we make it just for you.":"")];
+const ABOUT_DEFAULT=["KARIA makes handmade crochet bags, stitch by stitch, in small batches.","Each piece is made one at a time, so colors and stitches can vary slightly from bag to bag."+(CUSTOMIZE_ON?" With KARIA Atelier you can design your own: pick a style, choose every color, and we make it just for you.":"")];
 export function AboutPage({Header,info={},products=[]}){
  const text=String(info.about||"").split(/\n+/).map(s=>s.trim()).filter(Boolean);
  // three bags in stock first, for the photo strip
@@ -239,8 +242,13 @@ export function AboutPage({Header,info={},products=[]}){
 function Newsletter(){
  const [state,setState]=useState("");
  const submit=async e=>{e.preventDefault();const form=e.currentTarget,email=String(new FormData(form).get("email")||"").trim().toLowerCase();if(!email)return;if(!supabase){setState("error");return}setState("busy");const {error}=await supabase.from("newsletter_subscribers").insert({email});if(error&&error.code!=="23505"){setState("error");return}form.reset();setState("ok")};
- return <div className="newsletter"><small>JOIN THE KARIA LETTER</small><form onSubmit={submit}><input name="email" type="email" placeholder="Your email address" aria-label="Your email address" required/><button aria-label="Subscribe" disabled={state==="busy"}>→</button></form>{state==="ok"&&<p className="newsletterNote">Thank you — you are on the list.</p>}{state==="error"&&<p className="newsletterNote">We could not save your email right now. Please try again later.</p>}</div>
+ return <div className="newsletter"><small>JOIN THE KARIA LETTER</small><p className="newsletterLead">New bags and restocks, by email.</p><form onSubmit={submit}><input name="email" type="email" placeholder="Your email address" aria-label="Your email address" required/><button aria-label="Subscribe" disabled={state==="busy"}>→</button></form>{state==="ok"&&<p className="newsletterNote">Thank you — you are on the list.</p>}{state==="error"&&<p className="newsletterNote">We could not save your email right now. Please try again later.</p>}</div>
 }
 export function Footer({canAdmin,openAdmin}){
- return <footer><div><div className="logo">KARIA</div><p>Handmade crochet bags.<br/>Karia Shop LLC.</p></div><div className="footLinks"><a href="/shop">Shop</a>{CUSTOMIZE_ON&&<a href="/customize">Customize</a>}<a href="/reviews">Reviews</a><a href="/about">About</a><a href="/contact">Contact</a><a href="/orders">My orders</a></div><div className="footLinks footLegal">{LEGAL.map(([t,h])=><a key={h} href={h}>{t}</a>)}</div><Newsletter/>{canAdmin&&<button className="adminLink" onClick={openAdmin}>Admin</button>}<div className="copyright">© 2026 Karia Shop LLC · Handmade crochet bags</div></footer>
+ // three link columns: Shop, Help, Legal (LEGAL = Shipping, Returns, Privacy, Terms)
+ return <footer><div><div className="logo">KARIA</div><p>Handmade crochet bags.<br/>Karia Shop LLC.</p></div><div className="footCols">
+  <div className="footLinks" role="group" aria-label="Shop"><b className="footHead">Shop</b><a href="/shop">Shop all</a>{CUSTOMIZE_ON&&<a href="/customize">Customize</a>}<a href="/reviews">Reviews</a><a href="/about">About</a></div>
+  <div className="footLinks" role="group" aria-label="Help"><b className="footHead">Help</b>{LEGAL.slice(0,2).map(([t,h])=><a key={h} href={h}>{t}</a>)}<a href="/contact">Contact</a><a href="/orders">My orders</a></div>
+  <div className="footLinks footLegal" role="group" aria-label="Legal"><b className="footHead">Legal</b>{LEGAL.slice(2).map(([t,h])=><a key={h} href={h}>{t}</a>)}</div>
+ </div><Newsletter/>{canAdmin&&<button className="adminLink" onClick={openAdmin}>Admin</button>}<div className="copyright">© 2026 Karia Shop LLC · Handmade crochet bags</div></footer>
 }
