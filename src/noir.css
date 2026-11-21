@@ -544,3 +544,13 @@ html.noir .rtThumbs button{background:var(--n-fg);color:#0f0e0d}/* My orders: to
 html.noir .myOrderFoot b,html.noir .myOrderTrack b{color:var(--n-fg)!important}
 html.noir .myOrderTrack{background:var(--n-bg3)!important;border-radius:0!important}
 html.noir .noirStage .noirSlide img{object-fit:cover!important;object-position:center 55%}
+
+/* KARIA V7.66 — shipping method choice (Noir) */
+html.noir .shipMethods legend{font:500 13px var(--n-sans)!important;letter-spacing:.08em;color:var(--n-soft)}
+html.noir .checkoutForm label.shipOpt{font:300 15px/1.4 var(--n-sans)!important;color:var(--n-fg)!important;border-color:var(--n-line);background:#12100e}
+html.noir .shipOpt.on{border-color:var(--n-gold);background:#1b1814}
+html.noir .shipOpt.on .shipDot{border-color:var(--n-gold)}
+html.noir .shipOpt.on .shipDot::after{background:var(--n-gold)}
+html.noir .shipOpt:focus-within{outline-color:var(--n-gold)}
+html.noir .shipInfo small{color:var(--n-mut);opacity:1}
+html.noir .shipNote{color:var(--n-mut);opacity:1}

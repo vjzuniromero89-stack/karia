@@ -69,7 +69,7 @@ export function NoirHome({Header,products,add,loaded}){
  const story=products.find(p=>/chocolate/i.test(p.name))||products[0];
  return <div className="site noirHome">{Header}<main id="top">
   {products.length?<Hero products={products}/>:<section className="noirHero noirHeroEmpty"><div className="noirHeroText"><small>KARIA</small><h1>{loaded?"New bags are on the way.":"Loading the collection…"}</h1></div></section>}
-  <ul className="noirTrust" aria-label="Why KARIA"><li>Handmade</li><li>Ships from the US</li><li>Secure checkout by Stripe</li></ul>
+  <ul className="noirTrust" aria-label="Why KARIA"><li>Handmade</li><li>Free shipping</li><li>Secure checkout by Stripe</li></ul>
   <Coverflow products={products} add={add}/>
   {story&&<section className="noirSplit"><img src={closeUp(story)} alt={`${story.name}, close-up of the crochet stitches`} loading="lazy"/><div><small>The craft</small><h2>Every stitch, by hand.</h2><p>Thick cotton cord, tight single crochet and a rounded handle wrapped end to end. No two bags come out exactly alike.</p>
    <div className="noirFacts"><div><b>{products.length}</b><span>Colorways</span></div><div><b>100%</b><span>Handmade</span></div><div><b>{money(minPrice).replace(".00","")}</b><span>Each bag</span></div></div>

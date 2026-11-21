@@ -64,7 +64,7 @@ export function CartDrawer({open,setOpen,cart,setCart,checkout,notice,add}){
   {notice&&<p className="cartNotice">{notice}</p>}
   {!cart.length&&<p className="accountIntro">Find a handmade bag you love. It stays here while you keep looking.</p>}
   <div className="cartList">{groups.map(p=><div className="cartRow" key={p.key}><img src={p.img} alt=""/><div><b>{p.name}</b><small>{money(p.price)}</small><div className="cartQty"><button aria-label="Remove one" onClick={()=>removeOne(p.key)}>−</button><span>{p.qty}</span><button aria-label="Add one" onClick={()=>add(p)}>+</button></div></div><button className="cartRemove" aria-label={`Remove ${p.name}`} onClick={()=>removeAll(p.key)}>×</button></div>)}</div>
-  {cart.length>0?<><div className="cartTotal"><span>Subtotal</span><b>{money(cart.reduce((s,p)=>s+Number(p.price),0))}</b></div><p className="cartShipNote">Shipping is added at checkout. Secure payment by Stripe.</p><button type="button" className="accountPrimary secureCheckoutBtn" onClick={e=>{e.preventDefault();e.stopPropagation();checkout()}}>SECURE CHECKOUT <ArrowRight/></button></>:<a className="accountPrimary accountLink" href="/shop">SHOP KARIA <ArrowRight/></a>}
+  {cart.length>0?<><div className="cartTotal"><span>Subtotal</span><b>{money(cart.reduce((s,p)=>s+Number(p.price),0))}</b></div><p className="cartShipNote">Free standard shipping (2–5 business days). Faster shipping can be chosen at checkout. Secure payment by Stripe.</p><button type="button" className="accountPrimary secureCheckoutBtn" onClick={e=>{e.preventDefault();e.stopPropagation();checkout()}}>SECURE CHECKOUT <ArrowRight/></button></>:<a className="accountPrimary accountLink" href="/shop">SHOP KARIA <ArrowRight/></a>}
  </section></div>
 }
 
@@ -147,8 +147,8 @@ export function ProductPage({products,id,add,Header,reviews=[],user,onSignIn,onS
    <div className="productFact"><span>AVAILABILITY</span><b>{out?"Sold out":`${p.stock} available`}</b></div>
    {!out&&<div className="productFact productQty"><span>QUANTITY</span><div className="cartQty"><button aria-label="Less" onClick={()=>setQty(n=>Math.max(1,n-1))}>−</button><span>{qty}</span><button aria-label="More" onClick={()=>setQty(n=>Math.min(max,n+1))}>+</button></div></div>}
    <button className="productAdd" onClick={()=>add(p,qty)} disabled={out}>{out?"SOLD OUT":<>ADD TO BAG · {money(Number(p.price)*qty)} <ArrowRight/></>}</button>
-   <p className="productTrust">Handmade · Ships from the US · Secure checkout by Stripe</p>
-   <p className="productNote">Shipping is added at checkout. See <a href="/shipping">Shipping</a> and <a href="/returns">Returns &amp; Refunds</a>, or <a href="/contact">ask us a question</a>.</p>
+   <p className="productTrust">Handmade · Free shipping in the US · Secure checkout by Stripe</p>
+   <p className="productNote">Free standard shipping (2–5 business days); Priority and Express can be chosen at checkout. See <a href="/shipping">Shipping</a> and <a href="/returns">Returns &amp; Refunds</a>, or <a href="/contact">ask us a question</a>.</p>
    <a className="backShop" href="/shop">← Continue shopping</a>
   </div>
   {desc.long&&<section className="relatedProducts productLong"><div className="catalogContext"><div><small>ABOUT THIS PRODUCT</small><h2>Description</h2></div></div><div className="aboutText">{desc.long.split(/\n+/).map((t,i)=><p key={i}>{t}</p>)}</div></section>}

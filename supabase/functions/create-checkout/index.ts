@@ -24,7 +24,7 @@ Deno.serve(async(req)=>{
   const admin=createClient(url,service);
   const {data:{user}}=await userClient.auth.getUser();
   if(!user)throw new UserError("Sign in required");
-  const {items,shipping_address,coupon_code}=await req.json();
+  const {items,shipping_address,coupon_code,shipping_method}=await req.json();
   if(!Array.isArray(items)||!items.length)throw new UserError("Cart is empty");
 
   const ids=[...new Set(items.map((x:any)=>x.product_id))];
@@ -97,13 +97,20 @@ Deno.serve(async(req)=>{
    discount=Math.min(subtotal,Math.max(0,discount));coupon=data;
   }
   // KARIA V7.35 — shipping from Settings: flat rate, free once the order reaches the threshold
+  // KARIA V7.66 — Settings may list methods (Standard free, Priority/Express extra); the price always comes from here, never from the browser
   const {data:shipRow}=await admin.from("settings").select("value").eq("key","shipping").maybeSingle();
   const rule:any=shipRow?.value||{},afterDiscount=money(Math.max(0,subtotal-discount));
+  const methods:any[]=Array.isArray(rule.methods)?rule.methods.filter((m:any)=>m&&m.id&&m.active!==false):[];
+  const method:any=methods.length?(shipping_method?methods.find((m:any)=>m.id===shipping_method):methods[0]):null;
+  if(methods.length&&!method)throw new UserError("That shipping option is no longer available. Please choose another.");
   const freeOver=Number(rule.free_shipping_over||0);
-  const shipping=freeOver>0&&afterDiscount>=freeOver?0:money(Math.max(0,Number(rule.default_rate||0)));
+  const base=method?Number(method.price||0):Number(rule.default_rate||0);
+  // the free-shipping amount only applies to the first (standard) option
+  const shipping=freeOver>0&&afterDiscount>=freeOver&&(!method||method===methods[0])?0:money(Math.max(0,base));
+  const shipName=method?[method.name,method.service].filter(Boolean).map(String).join(" · ").slice(0,80):null;
   const total=money(afterDiscount+shipping);
 
-  const {data:order,error:oe}=await admin.from("orders").insert({customer_id:user.id,email:user.email||null,status:"pending",subtotal,discount_total:discount,shipping_total:shipping,total,shipping_address,coupon_code:normalizedCode}).select().single();
+  const {data:order,error:oe}=await admin.from("orders").insert({customer_id:user.id,email:user.email||null,status:"pending",subtotal,discount_total:discount,shipping_total:shipping,total,shipping_address,coupon_code:normalizedCode,...(shipName?{shipping_method:shipName}:{})}).select().single();
   if(oe)throw oe;
   const {error:le}=await admin.from("order_items").insert(lines.map((l:any)=>({order_id:order.id,product_id:l.product_id,qty:l.quantity,unit_price:l.unit_price,unit_cost:l.unit_cost,...(l.customization?{customization:l.customization}:{})})));
   if(le){await admin.from("orders").delete().eq("id",order.id);throw le;}
@@ -119,14 +126,14 @@ Deno.serve(async(req)=>{
   const session=await stripe.checkout.sessions.create({
    mode:"payment",
    customer_email:user.email||undefined,
-   line_items:[...goods,...(shipping>0?[usd("Shipping",shipping)]:[])],
-   metadata:{order_id:order.id,order_number:String(order.order_number||""),coupon_code:normalizedCode||"",discount_total:discount.toFixed(2)},
+   line_items:[...goods,...(shipping>0?[usd(shipName?`Shipping · ${shipName}`:"Shipping",shipping)]:[])],
+   metadata:{order_id:order.id,order_number:String(order.order_number||""),coupon_code:normalizedCode||"",discount_total:discount.toFixed(2),shipping_method:shipName||""},
    success_url:`${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
    cancel_url:`${origin}/checkout?canceled=1`,
    expires_at:Math.floor(Date.now()/1000)+31*60, // Stripe's minimum is 30 min; 31 leaves room for clock/network delay
   });
   await admin.from("orders").update({stripe_session_id:session.id}).eq("id",order.id);
-  return json({ok:true,order_id:order.id,order_number:order.order_number,subtotal,discount_total:discount,shipping_total:shipping,coupon_code:normalizedCode,total,checkout_url:session.url});
+  return json({ok:true,order_id:order.id,order_number:order.order_number,subtotal,discount_total:discount,shipping_total:shipping,shipping_method:shipName,coupon_code:normalizedCode,total,checkout_url:session.url});
  }catch(e){
   console.error("CREATE CHECKOUT ERROR",e);
   return json({ok:false,error:e instanceof UserError?e.message:"We could not start the payment. Please try again."},400);

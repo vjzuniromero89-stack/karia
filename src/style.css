@@ -865,3 +865,19 @@ nav .menuOnly{display:none}
 .cartQty button{min-width:36px;min-height:36px}
 .legalText h2{font-size:22px;margin:34px 0 10px}.legalText ul{padding-left:20px;line-height:1.7}
 .adminLoading{min-height:60vh;display:grid;place-items:center;font-size:14px;letter-spacing:2px}header.menuHeaderOpen>nav.open button.menuOnly{padding:22px 0!important;border-bottom:1px solid rgba(31,27,23,.16)!important;font-size:20px!important;letter-spacing:.18em}
+
+/* KARIA V7.66 — shipping method choice at checkout */
+.shipMethods{border:0;margin:18px 0 6px;padding:0;display:grid;gap:10px;min-width:0}
+.shipMethods legend{font:600 13px/1.2 Inter,Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;padding:0}
+.checkoutForm label.shipOpt{display:grid!important;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;border:1px solid #d7cec3;padding:14px 16px;cursor:pointer;text-transform:none!important;letter-spacing:0!important;margin:0}
+.checkoutForm label.shipOpt input{position:absolute!important;opacity:0!important;width:1px!important;height:1px!important;padding:0!important;margin:0!important;border:0!important;pointer-events:none}
+.shipDot{width:16px;height:16px;border:1px solid #9b9286;border-radius:50%;display:grid;place-items:center}
+.shipOpt.on{border-color:#66594b}
+.shipOpt.on .shipDot{border-color:currentColor}
+.shipOpt.on .shipDot::after{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.shipOpt:focus-within{outline:2px solid #66594b;outline-offset:2px}
+.shipInfo{display:grid;gap:3px;min-width:0}
+.shipInfo b{font-weight:500;letter-spacing:.03em}
+.shipInfo small{font-size:12.5px;opacity:.7}
+.shipOpt strong{font-weight:500;white-space:nowrap;font-variant-numeric:tabular-nums}
+.shipNote{font-size:12px;opacity:.65;margin:0}
