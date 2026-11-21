@@ -1,0 +1,5 @@
+﻿KARIA V7.50 — Pirate Ship export (2026-11-21)
+- Admin → Orders → EXPORT FOR PIRATE SHIP downloads a CSV of paid/processing orders with no tracking number yet.
+- Columns: Order ID (KARIA-<number>), Name, Address, Address Line 2, City, State, Zipcode, Country, Phone, Email, Pounds, Items.
+- Pounds = sum of qty x product weight (lb). It is left empty if any bag has no weight, and then Pirate Ship uses the saved package.
+- In Pirate Ship: Ship → Upload a spreadsheet. Match the columns once and Pirate Ship remembers them. After buying the labels, paste each tracking number in the order (Admin → Orders → view) and set the status to SHIPPED.
