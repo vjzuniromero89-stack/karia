@@ -4,6 +4,7 @@
 -- 1) Coupons: nobody can list codes any more. The store checks one code at a time with check_coupon().
 alter table public.coupons add column if not exists max_uses integer;  -- 2) null = unlimited
 drop policy if exists "public active coupons read" on public.coupons;
+drop policy if exists public_read_active_coupons on public.coupons;  -- the same rule under its production name (found 2026-11-21)
 do $$ begin create policy "admin coupons all" on public.coupons for all using (public.is_admin()) with check (public.is_admin()); exception when duplicate_object then null; end $$;
 
 create or replace function public.check_coupon(p_code text)
