@@ -543,3 +543,4 @@ html.noir .rtLabelBox code{color:var(--n-gold)}
 html.noir .rtThumbs button{background:var(--n-fg);color:#0f0e0d}/* My orders: total and tracking box were dark-on-dark / light-on-light in Noir */
 html.noir .myOrderFoot b,html.noir .myOrderTrack b{color:var(--n-fg)!important}
 html.noir .myOrderTrack{background:var(--n-bg3)!important;border-radius:0!important}
+html.noir .noirStage .noirSlide img{object-fit:cover!important;object-position:center 55%}

@@ -8,6 +8,8 @@ const money=n=>`$${Number(n||0).toFixed(2)}`;
 const reduceMotion=()=>typeof matchMedia==="function"&&matchMedia("(prefers-reduced-motion: reduce)").matches;
 // second photo of a product (the close-up), falling back to the main one
 const closeUp=p=>(p.media||[]).filter(m=>!isVideo(m))[1]?.url||p.img;
+// the hero frame is landscape: use the full-bag photo, never the vertical close-up ("-scene"), so every slide fills the frame the same way
+const heroPhoto=p=>(p.media||[]).filter(m=>!isVideo(m)).map(m=>m.url).find(u=>!/-scene\.[a-z]+$/i.test(u))||p.img;
 // bags you can buy first, then the sold-out ones
 const availableFirst=list=>[...list].sort((a,b)=>soldOut(a)-soldOut(b));
 
@@ -20,7 +22,7 @@ function Hero({products}){
  return <section className="noirHero noirHeroSplit" aria-label="Featured bags">
   <div className="noirHeroText"><small>Hand-crocheted · Limited pieces</small><h1>Made slowly, <i>worn</i> every day.</h1><p>Each KARIA bag is crocheted by hand, stripe by stripe, and finished with gold-tone rings.</p><a className="noirBtn" href="/shop">Shop the collection <ArrowRight/></a></div>
   <div className="noirStage">
-   {slides.map((p,n)=><a key={p.id} href={`/product/${p.id}`} className={`noirSlide${n===i?" on":""}`} aria-hidden={n!==i} tabIndex={n===i?0:-1}><img src={p.img} alt={n===i?p.name:""} fetchPriority={n===0?"high":"auto"}/></a>)}
+   {slides.map((p,n)=><a key={p.id} href={`/product/${p.id}`} className={`noirSlide${n===i?" on":""}`} aria-hidden={n!==i} tabIndex={n===i?0:-1}><img src={heroPhoto(p)} alt={n===i?p.name:""} fetchPriority={n===0?"high":"auto"}/></a>)}
    <span className="noirStageName">{slides[i]?.name}</span>
    {slides.length>1&&<div className="noirHeroNav"><button aria-label="Previous photo" onClick={()=>go(-1)}><ArrowLeft/></button><span><b>{String(i+1).padStart(2,"0")}</b> / {String(slides.length).padStart(2,"0")}</span><button aria-label="Next photo" onClick={()=>go(1)}><ArrowRight/></button></div>}
   </div>
