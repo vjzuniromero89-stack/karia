@@ -26,7 +26,7 @@ function Hero({products}){
 // 3D coverflow: the centre bag is big and lit, its neighbours turn away; arrows, a tap on a side bag or a swipe move it.
 function Coverflow({products,add}){
  const list=useMemo(()=>availableFirst(products),[products]);
- const [c,setC]=useState(0),start=useRef(null);
+ const [c,setC]=useState(0),start=useRef(null),dragged=useRef(false);
  useEffect(()=>{if(c>=list.length)setC(0)},[list.length,c]);
  if(!list.length)return null;
  const n=list.length,cur=list[Math.min(c,n-1)],out=soldOut(cur);
@@ -36,8 +36,8 @@ function Coverflow({products,add}){
  return <section className="noirFlowSec" aria-roledescription="carousel" aria-label="The collection">
   <div className="noirSecHead"><small>{n} handmade bags</small><h2>The Collection</h2></div>
   <div className="noirFlow" onKeyDown={e=>{if(e.key==="ArrowRight")go(1);if(e.key==="ArrowLeft")go(-1)}}
-   onPointerDown={e=>{start.current=e.clientX}} onPointerUp={e=>{if(start.current==null)return;const dx=e.clientX-start.current;start.current=null;if(Math.abs(dx)>40)go(dx<0?1:-1)}}>
-   {list.map((p,k)=><button type="button" key={p.id} className="noirFlowItem" style={place(k)} tabIndex={k===c?0:-1} aria-label={k===c?`${p.name}, ${money(p.price)}`:`Show ${p.name}`} onClick={()=>{if(k===c)location.assign(`/product/${p.id}`);else setC(k)}}>
+   onPointerDown={e=>{start.current=e.clientX;dragged.current=false}} onPointerUp={e=>{if(start.current==null)return;const dx=e.clientX-start.current;start.current=null;if(Math.abs(dx)>40){dragged.current=true;go(dx<0?1:-1)}}}>
+   {list.map((p,k)=><button type="button" key={p.id} className="noirFlowItem" style={place(k)} tabIndex={k===c?0:-1} aria-label={k===c?`${p.name}, ${money(p.price)}`:`Show ${p.name}`} onClick={()=>{if(dragged.current){dragged.current=false;return}if(k===c)location.assign(`/product/${p.id}`);else setC(k)}}>
     <img src={closeUp(p)} alt="" loading={Math.abs(k-c)<3?"eager":"lazy"} draggable="false"/>{soldOut(p)&&<span className="noirSold">Sold out</span>}
    </button>)}
   </div>

@@ -132,13 +132,14 @@ function ReviewForm({products,productId,user,onSignIn,onSaved}){
  const submit=async e=>{e.preventDefault();const form=e.currentTarget,f=Object.fromEntries(new FormData(form)),product_id=productId||pid;if(!product_id||!supabase){setState("error");return}setState("busy");
   // one review per customer and product: sending again replaces the earlier one
   const {error}=await supabase.from("product_reviews").upsert({product_id,user_id:user.id,author_name:String(f.author_name).trim(),rating,body:String(f.body).trim()},{onConflict:"product_id,user_id"});
-  if(error){setState("error");return}form.reset();setState("ok");onSaved?.()};
+  // RLS only lets customers who bought the bag write a review
+  if(error){setState(error.code==="42501"?"buyers":"error");return}form.reset();setState("ok");onSaved?.()};
  return <form className="checkoutForm reviewForm" onSubmit={submit}><h2>Write a review</h2>
   {!productId&&<label>Product<select value={pid} onChange={e=>setPid(e.target.value)} required><option value="">Choose a product</option>{products.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>}
   <div className="starPick" role="radiogroup" aria-label="Your rating"><span>YOUR RATING</span><div>{[1,2,3,4,5].map(i=><button type="button" key={i} role="radio" aria-checked={rating===i} aria-label={`${i} star${i>1?"s":""}`} className={i<=rating?"on":""} onClick={()=>setRating(i)}><Star aria-hidden="true"/></button>)}</div></div>
   <label>Name shown with your review<input name="author_name" defaultValue={user.user_metadata?.full_name||""} required maxLength={60}/></label>
   <label>Your review<textarea name="body" rows={5} required minLength={3} maxLength={2000}/></label>
-  {state==="ok"&&<p className="checkoutCouponSuccess">Thank you — your review is published.</p>}{state==="error"&&<p className="checkoutError">We could not save your review right now. Please try again later.</p>}
+  {state==="ok"&&<p className="checkoutCouponSuccess">Thank you — your review is published.</p>}{state==="error"&&<p className="checkoutError">We could not save your review right now. Please try again later.</p>}{state==="buyers"&&<p className="checkoutError">Reviews are open to customers who bought this bag. Thank you for understanding.</p>}
   <button className="checkoutPay" disabled={state==="busy"}>{state==="busy"?"SENDING…":"PUBLISH REVIEW"} <ArrowRight/></button></form>
 }
 function ReviewList({reviews,products,showProduct,empty}){

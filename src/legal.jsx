@@ -13,7 +13,7 @@ function pages(info){
  return {
   shipping:{small:'ORDERS & DELIVERY',title:'Shipping.',sections:[
    ['Where we ship',<p>We ship within the United States only.</p>],
-   ['Shipping cost',<p>A flat shipping rate is added at checkout (currently $10). Any free-shipping offer is shown in your bag before you pay. All prices are in US dollars.</p>],
+   ['Shipping cost',<p>A flat shipping rate is added at checkout and shown before you pay. Any free-shipping offer is shown in your bag before you pay. All prices are in US dollars.</p>],
    ['When your order ships',<p>Every KARIA bag is handmade. Bags in stock are shipped as soon as they are packed. Custom and made-to-order bags are crocheted after you order, so they take longer; the estimated time is shown when you order.</p>],
    ['Tracking',<p>When your order ships, you can see its status and tracking number (when available) on the My orders page.</p>],
    ['Problems with delivery',<p>If your package is late, lost or arrives damaged, contact us {contact} and we will help.</p>],
