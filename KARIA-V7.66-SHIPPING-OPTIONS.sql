@@ -1,5 +1,5 @@
 -- KARIA V7.66 — shipping options at checkout (2026-11-21)
--- Standard shipping is now inside the bag price ($40 + $12 = $52) and shows as Free.
+-- Standard shipping is now inside the bag price ($45 for Amelia and Aurora) and shows as Free.
 -- Priority and Express are charged on top. create-checkout reads settings.shipping.methods.
 alter table public.orders add column if not exists shipping_method text;
 
@@ -15,7 +15,7 @@ set value = value
     updated_at = now()
 where key = 'shipping';
 
--- only bags still at the old $40 price, so running this twice does nothing
-update public.products set price = 52 where price = 40;
+-- run 2026-11-21 as $40 → $52, then the owners chose $45 with shipping for both styles (same box and weight)
+update public.products set price = 45 where style in ('Amelia','Aurora');
 
 select sku, name, price from public.products order by sku;
