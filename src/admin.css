@@ -1,0 +1,45 @@
+/* KARIA admin additions (V7.49 audit). Base admin styles live in style.css. */
+.admin .adminToast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:100001;margin:0;display:flex;align-items:flex-start;gap:12px;width:max-content;max-width:min(640px,calc(100vw - 24px));font-size:13px;line-height:1.45;box-shadow:0 12px 40px rgba(0,0,0,.22)}
+.admin .adminToast span{flex:1;min-width:0}
+.admin .adminToast button{background:none;border:0;font-size:22px;line-height:1;padding:0 4px;cursor:pointer;color:inherit;min-width:32px;min-height:32px}
+.adminConfirm{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:100002;width:min(560px,calc(100vw - 24px));background:#211d18;color:#f6efe5;border-radius:14px;padding:18px;box-shadow:0 18px 60px rgba(0,0,0,.4);display:grid;gap:14px}
+.adminConfirm p{margin:0;font-size:14px;line-height:1.5}
+.adminConfirm div{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.adminConfirm button{min-height:44px;padding:0 18px;border-radius:10px;border:1px solid #6b6056;background:transparent;color:#f6efe5;cursor:pointer;font-weight:600}
+.adminConfirm button.dangerBtn{background:#b3261e;border-color:#b3261e;color:#fff}
+.fieldWarn{color:#b3261e;font-size:12px;font-weight:600}
+.linkBtn{background:none;border:0;padding:0;text-decoration:underline;cursor:pointer;color:inherit;font:inherit}
+.autoTag{font-size:10px;letter-spacing:.06em;color:#756a5e;white-space:nowrap}
+.statusNote{grid-column:1/-1;margin:0;padding:10px 12px;border-radius:10px;background:#fff4e5;border:1px solid #f0c98a;font-size:13px}
+.adminSearch{width:100%;max-width:420px;min-height:44px;padding:0 14px;border:1px solid #d6c5b0;border-radius:10px;background:#fff;margin:0 0 12px;font-size:14px}
+.orderFilters{display:grid;gap:10px;margin-bottom:6px}
+.chipRow{display:flex;gap:8px;flex-wrap:wrap}
+.chip{min-height:38px;padding:0 14px;border-radius:999px;border:1px solid #d6c5b0;background:#fff;cursor:pointer;font-size:11px;letter-spacing:.04em}
+.chip.on{background:#211d18;color:#f6efe5;border-color:#211d18}
+.filePreview{grid-column:1/-1;display:flex;gap:10px;flex-wrap:wrap}
+.filePreview figure{margin:0;width:96px}
+.filePreview img,.filePreview video{width:96px;height:96px;object-fit:cover;border-radius:10px;display:block;background:#eee}
+.filePreview figcaption{font-size:10px;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inlineQty{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+.inlineQty label{display:flex;flex-direction:column;font-size:11px;gap:4px}
+.inlineQty input{width:90px;min-height:40px;padding:0 10px}
+.inlineEdit{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;align-items:end;padding:8px 0}
+.inlineEdit .rowActionButtons{grid-column:1/-1}
+.inlineEdit input,.inlineEdit textarea{min-height:40px;padding:8px 10px}
+.photoManager{margin:0 0 22px;padding:16px;border:1px solid #e6e2db;border-radius:14px;background:#fff}
+.photoManagerHead{display:flex;justify-content:space-between;gap:12px;margin-bottom:12px;font-size:11px;letter-spacing:.05em}
+.photoGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.photoGrid figure{margin:0;border:2px solid transparent;border-radius:12px;padding:6px;background:#faf7f2}
+.photoGrid figure.isMain{border-color:#211d18}
+.photoGrid img,.photoGrid video{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block}
+.photoGrid figcaption{font-size:11px;font-weight:700;margin:6px 0}
+.photoActions{display:flex;flex-wrap:wrap;gap:6px}
+.photoActions button{min-height:40px;min-width:40px;padding:0 10px;font-size:11px}
+.photoActions button:disabled{opacity:.35}
+.photoUpload{display:grid;gap:10px;margin-top:14px}
+@media(max-width:700px){
+ .admin .adminToast{bottom:10px}
+ .adminConfirm{bottom:10px}
+ .adminConfirm button{flex:1}
+ .photoGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}

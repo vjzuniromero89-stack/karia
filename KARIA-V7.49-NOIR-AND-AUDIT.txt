@@ -1,0 +1,50 @@
+KARIA V7.49 — Noir store look + full audit fixes (2026-11-21)
+
+LOOK
+- New "Noir Atelier" look: near-black, ivory and gold; Bodoni Moda + Jost.
+- New home (src/noir.jsx): crossfade hero, 3D coverflow of every bag (available first), the craft story, and the making-of film (loads only when it is on screen).
+- The original look is kept. To switch: Admin → Settings → Store look → Classic.
+  It is also saved on GitHub as branch "estilo-original" and tag "estilo-original-v7.48".
+
+STORE FIXES
+- Phone header: the bag, account and search icons were invisible. My orders and Account were added to the phone menu.
+- New pages: Shipping, Returns & Refunds, Privacy and Terms (a draft; have them reviewed). Linked from the footer and the checkout.
+- Shop sorts available bags first. "You may also like" shows available bags first. Empty stars are hidden.
+- The bag refreshes prices and stock from the store and drops sold-out pieces. It says that shipping is added at checkout.
+- Checkout: sign-in notice at the top, a message after a canceled payment, links to the policies.
+- The success page checks that the order is really paid.
+- Forgot password. The confirmation email returns to the checkout.
+- No more demo bags with fake prices while loading. Real 404 page.
+- A title on every page. Description, Open Graph image, favicon, robots.txt and sitemap.xml.
+- Price font is readable. Inputs use the store font and are 16px on phones. Visible focus. Dialogs close with Esc.
+- Lighter: the admin loads only for admins, the films no longer autoplay-download, card photos use thumbnails, unused packages and the 9.5 MB unused video are removed.
+
+ADMIN FIXES (src/admin.jsx + src/admin.css)
+- Products:
+  - Initial stock when creating a product.
+  - Photo manager in Edit: add, delete, reorder, make main.
+  - Photos are resized before upload.
+  - No half-created products when an upload fails.
+  - The "Publish" checkbox works.
+  - Visible labels and an automatic SKU.
+  - Stock column, + STOCK, DUPLICATE and search.
+- Profit formula fixed: tax and shipping were subtracted twice. Same formula on Dashboard, Accounting and each order.
+- Inventory is classified by movement type. Sale movements are locked. Deleting a test order returns its stock.
+- Order status changes are limited to sensible ones. Cancelled/refunded orders return stock (SQL trigger).
+- Coupons: max uses, edit, end of day. Expenses: edit and delete. Orders: filters and search. Brands: edit and activate.
+- Settings: Store look. Notices show at the bottom on phones.
+
+DATABASE (run in this order in Supabase → SQL Editor)
+1. KARIA-V7.42-REVIEWS.sql (creates product_reviews; it was never run)
+2. KARIA-V7.49-AUDIT.sql. This file:
+   - hides coupon codes (check_coupon) and adds max_uses
+   - returns stock on cancel/refund
+   - allows only verified-purchase reviews
+   - gives admins permissions for photos
+   - removes the "to be confirmed" text
+   - adds anti-spam limits
+   - lets the store read shipping and storefront settings
+Do NOT run V7.43 again (it deletes the Chocolate photos).
+
+FUNCTION
+- supabase/functions/create-checkout/index.ts: max uses, custom bags only when enabled, allow-listed return URLs, one line per bag on the Stripe receipt, sessions expire after 31 min, safe error messages. Paste it in Supabase and click Deploy.

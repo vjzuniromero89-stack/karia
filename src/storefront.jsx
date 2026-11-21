@@ -26,6 +26,10 @@ export function parseDescription(text){
 }
 const cartKey=p=>p.cartKey||p.id;
 const money=n=>`$${Number(n||0).toFixed(2)}`;
+// Panels (bag, account) close with the Escape key.
+export function useEscape(open,close){useEffect(()=>{if(!open)return;const f=e=>{if(e.key==="Escape")close()};addEventListener("keydown",f);return()=>removeEventListener("keydown",f)},[open,close])}
+// Legal pages linked from the footer and the checkout.
+export const LEGAL=[["Shipping","/shipping"],["Returns & Refunds","/returns"],["Privacy","/privacy"],["Terms","/terms"]];
 
 /* ───────────────────────── HEADER ───────────────────────── */
 // One header for every storefront page: mobile menu, search, account and bag.
@@ -35,7 +39,7 @@ export function StoreHeader({cartCount,onCart,onAccount}){
  const links=[["SHOP","/shop"],...(CUSTOMIZE_ON?[["CUSTOMIZE","/customize"]]:[]),["REVIEWS","/reviews"],["ABOUT","/about"],["CONTACT","/contact"]];
  const here=location.pathname;
  return <><header className={menu?"menuHeaderOpen":""}><button className="icon mobile" aria-label="Menu" onClick={()=>setMenu(!menu)}>{menu?<X/>:<Menu/>}</button><a className="logo" href="/">KARIA</a>
-  <nav className={menu?"open":""}>{links.map(([label,href])=><a key={href} href={href} className={here===href?"current":""} onClick={close}>{label}</a>)}</nav>
+  <nav className={menu?"open":""}>{links.map(([label,href])=><a key={href} href={href} className={here===href?"current":""} onClick={close}>{label}</a>)}<a className="menuOnly" href="/orders" onClick={close}>MY ORDERS</a><button type="button" className="menuOnly" onClick={()=>{close();onAccount()}}>ACCOUNT</button></nav>
   <div className="actions"><a className="iconLink" href="/shop" aria-label="Search products"><Search/></a><button className="accountIcon" aria-label="Account" onClick={onAccount}><User/></button><button className="bag" aria-label="Open bag" onClick={onCart}><ShoppingBag/><b>{cartCount}</b></button></div>
  </header>{menu&&<div className="mobileMenuBackdrop" onClick={close} aria-hidden="true"/>}</>
 }
@@ -43,14 +47,15 @@ export function StoreHeader({cartCount,onCart,onAccount}){
 /* ───────────────────────── BAG ───────────────────────── */
 // The bag is stored as one entry per piece; here it is shown as one row per product with + / −.
 export function CartDrawer({open,setOpen,cart,setCart,checkout,notice,add}){
+ useEscape(open,()=>setOpen(false));
  if(!open)return null;
  const groups=Object.values(cart.reduce((a,p)=>{const k=cartKey(p);a[k]??={...p,key:k,qty:0};a[k].qty++;return a},{}));
  const removeOne=k=>setCart(c=>{const i=c.map(cartKey).lastIndexOf(k);return i<0?c:c.filter((_,x)=>x!==i)});
  const removeAll=k=>setCart(c=>c.filter(x=>cartKey(x)!==k));
- return <div className="accountBackdrop" onMouseDown={()=>setOpen(false)}><section className="accountPanel" onMouseDown={e=>e.stopPropagation()}><button className="accountClose" aria-label="Close" onClick={()=>setOpen(false)}><X/></button><div className="accountBrand">KARIA</div><small className="accountEyebrow">YOUR BAG</small><h2>{cart.length?`${cart.length} piece${cart.length>1?"s":""}`:"Your bag is empty"}</h2>
+ return <div className="accountBackdrop" onMouseDown={()=>setOpen(false)}><section className="accountPanel" role="dialog" aria-modal="true" aria-label="Your bag" onMouseDown={e=>e.stopPropagation()}><button className="accountClose" aria-label="Close" autoFocus onClick={()=>setOpen(false)}><X/></button><div className="accountBrand">KARIA</div><small className="accountEyebrow">YOUR BAG</small><h2>{cart.length?`${cart.length} piece${cart.length>1?"s":""}`:"Your bag is empty"}</h2>
   {notice&&<p className="cartNotice">{notice}</p>}
   <div className="cartList">{groups.map(p=><div className="cartRow" key={p.key}><img src={p.img} alt=""/><div><b>{p.name}</b><small>{money(p.price)}</small><div className="cartQty"><button aria-label="Remove one" onClick={()=>removeOne(p.key)}>−</button><span>{p.qty}</span><button aria-label="Add one" onClick={()=>add(p)}>+</button></div></div><button className="cartRemove" aria-label={`Remove ${p.name}`} onClick={()=>removeAll(p.key)}>×</button></div>)}</div>
-  {cart.length>0?<><div className="cartTotal"><span>Subtotal</span><b>{money(cart.reduce((s,p)=>s+Number(p.price),0))}</b></div><button type="button" className="accountPrimary secureCheckoutBtn" onClick={e=>{e.preventDefault();e.stopPropagation();checkout()}}>SECURE CHECKOUT <ArrowRight/></button></>:<a className="accountPrimary accountLink" href="/shop">SHOP KARIA <ArrowRight/></a>}
+  {cart.length>0?<><div className="cartTotal"><span>Subtotal</span><b>{money(cart.reduce((s,p)=>s+Number(p.price),0))}</b></div><p className="cartShipNote">Shipping is added at checkout.</p><button type="button" className="accountPrimary secureCheckoutBtn" onClick={e=>{e.preventDefault();e.stopPropagation();checkout()}}>SECURE CHECKOUT <ArrowRight/></button></>:<a className="accountPrimary accountLink" href="/shop">SHOP KARIA <ArrowRight/></a>}
  </section></div>
 }
 
@@ -58,49 +63,50 @@ export function CartDrawer({open,setOpen,cart,setCart,checkout,notice,add}){
 function Price({p}){return onSale(p)?<span className="priceSale"><s>{money(p.compareAt)}</s><b>{money(p.price)}</b></span>:<b>{money(p.price)}</b>}
 export function ProductCard({p,add}){
  const out=soldOut(p);
- return <article className="catalogCard"><a href={`/product/${p.id}`}><div className="catalogImage newArrivalImage"><img src={p.img} alt={p.name} loading="lazy"/>{out?<span className="newBadge soldBadge">SOLD OUT</span>:onSale(p)?<span className="newBadge saleBadge">SALE −{percentOff(p)}%</span>:isNew(p)&&<span className="newBadge">NEW</span>}</div><small>{p.category||p.brand}</small><h2>{p.name}</h2><div className="cardStars"><Stars value={p.rating||0}/><span>{p.reviewCount>0?`${p.rating.toFixed(1)} (${p.reviewCount})`:"No reviews yet"}</span></div></a><div className="catalogBuy"><Price p={p}/><button onClick={()=>add(p)} disabled={out}>{out?"SOLD OUT":"ADD TO BAG"}</button></div></article>
+ return <article className="catalogCard"><a href={`/product/${p.id}`}><div className="catalogImage newArrivalImage"><img src={p.thumb||p.img} alt={p.name} loading="lazy"/>{out?<span className="newBadge soldBadge">SOLD OUT</span>:onSale(p)?<span className="newBadge saleBadge">SALE −{percentOff(p)}%</span>:isNew(p)&&<span className="newBadge">NEW</span>}</div><small>{p.category||p.brand}</small><h2>{p.name}</h2>{p.reviewCount>0&&<div className="cardStars"><Stars value={p.rating||0}/><span>{`${p.rating.toFixed(1)} (${p.reviewCount})`}</span></div>}</a><div className="catalogBuy"><Price p={p}/><button onClick={()=>add(p)} disabled={out}>{out?"SOLD OUT":"ADD TO BAG"}</button></div></article>
 }
 
 // Category "ALL" = everything, "NEW" = registered in the last 30 days, anything else = a category name.
-export function ShopPage({products,add,Header,startNew}){
+export function ShopPage({products,add,Header,startNew,loaded=true}){
  const params=new URLSearchParams(location.search);
- const [q,setQ]=useState(params.get("q")||""),[sort,setSort]=useState("newest"),[category,setCategory]=useState(startNew?"NEW":params.get("category")||"ALL");
+ const [q,setQ]=useState(params.get("q")||""),[sort,setSort]=useState("available"),[category,setCategory]=useState(startNew?"NEW":params.get("category")||"ALL");
  const categories=useMemo(()=>Array.from(new Set(products.map(p=>String(p.category||"").trim()).filter(Boolean))).sort((a,b)=>a.localeCompare(b)),[products]);
  const inCategory=(p,c)=>c==="ALL"||(c==="NEW"?isNew(p):String(p.category||"").toLowerCase()===c.toLowerCase());
  const shown=useMemo(()=>products.filter(p=>inCategory(p,category)&&`${p.name} ${p.brand} ${p.tone} ${p.category||""}`.toLowerCase().includes(q.toLowerCase()))
-  .slice().sort((a,b)=>sort==="low"?a.price-b.price:sort==="high"?b.price-a.price:sort==="newest"?new Date(b.created_at||0)-new Date(a.created_at||0):String(a.name).localeCompare(String(b.name))),[products,q,sort,category]);
+  .slice().sort((a,b)=>sort==="low"?a.price-b.price:sort==="high"?b.price-a.price:sort==="newest"?new Date(b.created_at||0)-new Date(a.created_at||0):sort==="available"?(soldOut(a)-soldOut(b))||new Date(b.created_at||0)-new Date(a.created_at||0):String(a.name).localeCompare(String(b.name))),[products,q,sort,category]);
  const choose=c=>{setCategory(c);history.replaceState({},"",c==="ALL"?"/shop":c==="NEW"?"/new":`/shop?category=${encodeURIComponent(c)}`)};
  const chips=[["ALL","All products"],...(products.some(isNew)||category==="NEW"?[["NEW","New arrivals"]]:[]),...categories.map(c=>[c,c])];
  const title=category==="ALL"?"All products":category==="NEW"?"New arrivals":category;
  return <div className="catalogPage">{Header}
   <main className="catalogMain">
-   <div className="catalogHero"><small>KARIA COLLECTION</small><h1>{category==="NEW"?"New at KARIA.":"Shop KARIA."}</h1><p>Fashion, beauty, home, lifestyle and more — curated in one place.</p></div>
+   <div className="catalogHero"><small>KARIA COLLECTION</small><h1>{category==="NEW"?"New at KARIA.":"Shop KARIA."}</h1><p>Handmade crochet bags, crocheted one by one.</p></div>
    <div className="shopChips">{chips.map(([id,label])=><button key={id} className={category===id?"active":""} onClick={()=>choose(id)}>{label}<b>{products.filter(p=>inCategory(p,id)).length}</b></button>)}</div>
    <section className="shopProducts">
-    <div className="catalogTools"><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search products" aria-label="Search products"/><select value={sort} onChange={e=>setSort(e.target.value)} aria-label="Sort"><option value="newest">Newest</option><option value="name">Name</option><option value="low">Price: low to high</option><option value="high">Price: high to low</option></select></div>
+    <div className="catalogTools"><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search products" aria-label="Search products"/><select value={sort} onChange={e=>setSort(e.target.value)} aria-label="Sort"><option value="available">Available first</option><option value="newest">Newest</option><option value="name">Name</option><option value="low">Price: low to high</option><option value="high">Price: high to low</option></select></div>
     <div className="catalogContext"><div><small>{category==="ALL"?"KARIA SHOP":category==="NEW"?"JUST ARRIVED":"CATEGORY"}</small><h2>{title}</h2></div><span>{shown.length} product{shown.length===1?"":"s"}</span></div>
     <div className="catalogGrid">{shown.map(p=><ProductCard key={p.id} p={p} add={add}/>)}</div>
-    {!shown.length&&<div className="catalogEmpty">{q?`No products match "${q}".`:category==="NEW"?"Nothing new in the last 30 days.":"No products found in this category."} {category!=="ALL"&&<button className="dashLink" onClick={()=>{setQ("");choose("ALL")}}>SEE ALL PRODUCTS</button>}</div>}
+    {!shown.length&&!loaded&&<div className="catalogEmpty">Loading the collection…</div>}
+    {!shown.length&&loaded&&<div className="catalogEmpty">{q?`No products match "${q}".`:category==="NEW"?"Nothing new in the last 30 days.":"No products found in this category."} {category!=="ALL"&&<button className="dashLink" onClick={()=>{setQ("");choose("ALL")}}>SEE ALL PRODUCTS</button>}</div>}
    </section>
   </main></div>
 }
 
 /* ───────────────────────── PRODUCT ───────────────────────── */
-export function ProductPage({products,id,add,Header,reviews=[],user,onSignIn,onSaved}){
+export function ProductPage({products,id,add,Header,reviews=[],user,onSignIn,onSaved,loaded=true}){
  const [sel,setSel]=useState(0),[qty,setQty]=useState(1);
  useEffect(()=>{setSel(0);setQty(1)},[id]);
  const p=products.find(x=>String(x.id)===String(id));
- if(!p)return <div className="catalogPage">{Header}<main className="catalogMain"><div className="catalogHero"><h1>Product not found.</h1><a className="cta" href="/shop">Back to shop <ArrowRight/></a></div></main></div>;
+ if(!p)return <div className="catalogPage">{Header}<main className="catalogMain"><div className="catalogHero">{loaded?<><h1>Product not found.</h1><a className="cta" href="/shop">Back to shop <ArrowRight/></a></>:<h1>Loading…</h1>}</div></main></div>;
  const media=p.media?.length?p.media:[{url:p.img,media_type:"image"}];
  const desc=parseDescription(p.description);
  const cur=media[Math.min(sel,media.length-1)],out=soldOut(p),max=Math.max(1,Number(p.stock||0));
  // same category first, then the rest of the shop
- const related=products.filter(x=>x.id!==p.id).sort((a,b)=>(b.category===p.category)-(a.category===p.category)).slice(0,3);
+ const related=products.filter(x=>x.id!==p.id).sort((a,b)=>(soldOut(a)-soldOut(b))||(b.category===p.category)-(a.category===p.category)).slice(0,3);
  return <div className="catalogPage">{Header}<main className="productPage">
   <div className="productGalleryWrap"><div className="productGallery">{isVideo(cur)?<video src={cur.url} controls playsInline muted/>:<img src={cur.url} alt={p.name}/>}{out&&<span className="newBadge soldBadge">SOLD OUT</span>}</div>
    {media.length>1&&<div className="productThumbs">{media.map((m,i)=><button key={m.url||i} className={i===sel?"on":""} onClick={()=>setSel(i)} aria-label={`View ${i+1} of ${media.length}`}>{isVideo(m)?<span><Play/></span>:<img src={m.url} alt=""/>}</button>)}</div>}
   </div>
-  <div className="productInfo"><small>{p.category||p.brand}</small><h1>{p.name}</h1><a className="cardStars" href="#reviews"><Stars value={p.rating||0} size={16}/><span>{p.reviewCount>0?`${p.rating.toFixed(1)} · ${p.reviewCount} review${p.reviewCount===1?"":"s"}`:"No reviews yet · be the first"}</span></a><div className="productPrice">{onSale(p)?<><s>{money(p.compareAt)}</s>{money(p.price)}<em>SAVE {percentOff(p)}%</em></>:money(p.price)}</div><p>{desc.short||"A KARIA selection chosen for the collection."}</p>{desc.features.length>0&&<ul className="productFeatures">{desc.features.map((f,i)=>{const at=f.indexOf(":");return <li key={i}>{at>0&&at<28?<><b>{f.slice(0,at)}</b>{f.slice(at+1)}</>:f}</li>})}</ul>}
+  <div className="productInfo"><small>{p.category||p.brand}</small><h1>{p.name}</h1><a className="cardStars" href="#reviews">{p.reviewCount>0?<><Stars value={p.rating||0} size={16}/><span>{`${p.rating.toFixed(1)} · ${p.reviewCount} review${p.reviewCount===1?"":"s"}`}</span></>:<span>Write the first review</span>}</a><div className="productPrice">{onSale(p)?<><s>{money(p.compareAt)}</s>{money(p.price)}<em>SAVE {percentOff(p)}%</em></>:money(p.price)}</div><p>{desc.short||"A KARIA selection chosen for the collection."}</p>{desc.features.length>0&&<ul className="productFeatures">{desc.features.map((f,i)=>{const at=f.indexOf(":");return <li key={i}>{at>0&&at<28?<><b>{f.slice(0,at)}</b>{f.slice(at+1)}</>:f}</li>})}</ul>}
    {p.tone&&<div className="productFact"><span>DETAILS</span><b>{p.tone}</b></div>}
    <div className="productFact"><span>AVAILABILITY</span><b>{out?"Sold out":`${p.stock} available`}</b></div>
    {!out&&<div className="productFact productQty"><span>QUANTITY</span><div className="cartQty"><button aria-label="Less" onClick={()=>setQty(n=>Math.max(1,n-1))}>−</button><span>{qty}</span><button aria-label="More" onClick={()=>setQty(n=>Math.min(max,n+1))}>+</button></div></div>}
@@ -208,7 +214,7 @@ export function ContactPage({Header,info={}}){
   </div></main></div>
 }
 
-const ABOUT_DEFAULT=["KARIA is one store with many worlds — fashion, beauty, home and lifestyle pieces chosen one by one.","Our handmade bags are crocheted by hand in small batches."+(CUSTOMIZE_ON?" With KARIA Atelier you can design your own: pick a style, choose every color, and we make it just for you.":"")];
+const ABOUT_DEFAULT=["KARIA makes handmade crochet bags, stitch by stitch, in small batches.","Our handmade bags are crocheted by hand in small batches."+(CUSTOMIZE_ON?" With KARIA Atelier you can design your own: pick a style, choose every color, and we make it just for you.":"")];
 export function AboutPage({Header,info={}}){
  const text=String(info.about||"").split(/\n+/).map(s=>s.trim()).filter(Boolean);
  return <div className="catalogPage">{Header}<main className="catalogMain narrowMain"><div className="catalogHero"><small>OUR STORY</small><h1>About KARIA.</h1></div>
@@ -221,8 +227,8 @@ export function AboutPage({Header,info={}}){
 function Newsletter(){
  const [state,setState]=useState("");
  const submit=async e=>{e.preventDefault();const form=e.currentTarget,email=String(new FormData(form).get("email")||"").trim().toLowerCase();if(!email)return;if(!supabase){setState("error");return}setState("busy");const {error}=await supabase.from("newsletter_subscribers").insert({email});if(error&&error.code!=="23505"){setState("error");return}form.reset();setState("ok")};
- return <div className="newsletter"><small>JOIN THE KARIA LETTER</small><form onSubmit={submit}><input name="email" type="email" placeholder="Your email address" required/><button aria-label="Subscribe" disabled={state==="busy"}>→</button></form>{state==="ok"&&<p className="newsletterNote">Thank you — you are on the list.</p>}{state==="error"&&<p className="newsletterNote">We could not save your email right now. Please try again later.</p>}</div>
+ return <div className="newsletter"><small>JOIN THE KARIA LETTER</small><form onSubmit={submit}><input name="email" type="email" placeholder="Your email address" aria-label="Your email address" required/><button aria-label="Subscribe" disabled={state==="busy"}>→</button></form>{state==="ok"&&<p className="newsletterNote">Thank you — you are on the list.</p>}{state==="error"&&<p className="newsletterNote">We could not save your email right now. Please try again later.</p>}</div>
 }
 export function Footer({canAdmin,openAdmin}){
- return <footer><div><div className="logo">KARIA</div><p>Fashion, beauty, home, lifestyle & more.<br/>Curated by KARIA.</p></div><div className="footLinks"><a href="/shop">Shop</a>{CUSTOMIZE_ON&&<a href="/customize">Customize</a>}<a href="/reviews">Reviews</a><a href="/about">About</a><a href="/contact">Contact</a><a href="/orders">My orders</a></div><Newsletter/>{canAdmin&&<button className="adminLink" onClick={openAdmin}>Admin</button>}<div className="copyright">© 2026 KARIA · ONE STORE · MANY WORLDS</div></footer>
+ return <footer><div><div className="logo">KARIA</div><p>Handmade crochet bags.<br/>Karia Shop LLC.</p></div><div className="footLinks"><a href="/shop">Shop</a>{CUSTOMIZE_ON&&<a href="/customize">Customize</a>}<a href="/reviews">Reviews</a><a href="/about">About</a><a href="/contact">Contact</a><a href="/orders">My orders</a></div><div className="footLinks footLegal">{LEGAL.map(([t,h])=><a key={h} href={h}>{t}</a>)}</div><Newsletter/>{canAdmin&&<button className="adminLink" onClick={openAdmin}>Admin</button>}<div className="copyright">© 2026 Karia Shop LLC · Handmade crochet bags</div></footer>
 }
