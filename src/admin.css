@@ -243,3 +243,4 @@
  .admin.kAdmin .kPcards{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
  .admin.kAdmin .kPanel{padding:18px 16px}
 }
+.admin .kHint{display:block;font-size:13px;font-weight:400;color:#5f574e;margin-top:6px;text-transform:none;letter-spacing:0}
