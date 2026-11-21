@@ -325,4 +325,4 @@
  .admin.kAdmin .kRetLay{grid-template-columns:minmax(0,1fr)}
  .admin.kAdmin .kKv{grid-template-columns:110px minmax(0,1fr)}
  .admin.kAdmin .kRetRow .kPill{font-size:12px;padding:2px 8px}
-}
+}.admin .kThree{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}@media(max-width:600px){.admin .kThree{grid-template-columns:1fr}}
