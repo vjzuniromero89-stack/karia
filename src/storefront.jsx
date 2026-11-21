@@ -31,12 +31,20 @@ export function useEscape(open,close){useEffect(()=>{if(!open)return;const f=e=>
 // Legal pages linked from the footer and the checkout.
 export const LEGAL=[["Shipping","/shipping"],["Returns & Refunds","/returns"],["Privacy","/privacy"],["Terms","/terms"]];
 
+/* ───────────── NOIR "BOUTIQUE" PIECES (Shop, Reviews, About, Contact; classic keeps its own markup) ───────────── */
+// second photo of a product (the close-up), falling back to the main one — same rule as noir.jsx
+const closeUp=p=>(p.media||[]).filter(m=>!isVideo(m))[1]?.url||p.img;
+// Products have no color field: the color is the word in the bag's name ("Emerald Stripe Bag"). Unknown names get no swatch.
+const COLORS=[["Chocolate","#5a3a28"],["Camel","#c49a62"],["Emerald","#0f6b4b"],["Turquoise","#1aa3a8"],["Navy","#1d2c4f"],["Mustard","#d4a017"],["Rose","#e3a1ad"],["Lavender","#a99bd1"],["Olive","#6b7034"],["Sand","#d8c3a0"],["Terracotta","#b85a3c"],["Burgundy","#7a1f2e"],["Pearl Gray","#b9bcc0"],["Black","#1b1b1b"]];
+const colorOf=p=>COLORS.find(([c])=>new RegExp(`\\b${c}\\b`,"i").test(p.name||""))?.[0]||"";
+const BqHero=({eyebrow,title,lead})=><div className="bqHero"><div className="bqEye">{eyebrow}</div><h1>{title}</h1><div className="bqRule"/>{lead&&<p className="bqLead">{lead}</p>}</div>;
+
 /* ───────────────────────── HEADER ───────────────────────── */
 // One header for every storefront page: mobile menu, search, account and bag.
 export function StoreHeader({cartCount,onCart,onAccount}){
  const [menu,setMenu]=useState(false);
  const close=()=>setMenu(false);
- const links=[["SHOP","/shop"],...(CUSTOMIZE_ON?[["CUSTOMIZE","/customize"]]:[]),["REVIEWS","/reviews"],["ABOUT","/about"],["CONTACT","/contact"]];
+ const links=[["HOME","/"],["SHOP","/shop"],...(CUSTOMIZE_ON?[["CUSTOMIZE","/customize"]]:[]),["REVIEWS","/reviews"],["ABOUT","/about"],["CONTACT","/contact"]];
  const here=location.pathname;
  return <><header className={menu?"menuHeaderOpen":""}><button className="icon mobile" aria-label="Menu" onClick={()=>setMenu(!menu)}>{menu?<X/>:<Menu/>}</button><a className="logo" href="/">KARIA</a>
   <nav className={menu?"open":""}>{links.map(([label,href])=><a key={href} href={href} className={here===href?"current":""} onClick={close}>{label}</a>)}<a className="menuOnly" href="/orders" onClick={close}>MY ORDERS</a><button type="button" className="menuOnly" onClick={()=>{close();onAccount()}}>ACCOUNT</button></nav>
@@ -68,9 +76,17 @@ export function ProductCard({p,add}){
 }
 
 // Category "ALL" = everything, "NEW" = registered in the last 30 days, anything else = a category name.
-export function ShopPage({products,add,Header,startNew,loaded=true}){
+function BqCard({p,add}){
+ const out=soldOut(p);
+ return <article className="bqCard"><a href={`/product/${p.id}`}><div className="bqPh"><img src={closeUp(p)} alt={p.name} loading="lazy"/>{out?<span className="bqTag">Sold out</span>:onSale(p)?<span className="bqTag">Sale −{percentOff(p)}%</span>:isNew(p)&&<span className="bqTag">New</span>}</div><h3>{p.name}</h3></a>
+  {p.reviewCount>0&&<div className="bqStars"><Stars value={p.rating||0}/><span>{`${p.rating.toFixed(1)} (${p.reviewCount})`}</span></div>}
+  <div className="bqPrice"><Price p={p}/></div><div className="bqAct"><button className="bqBtn ghost" onClick={()=>add(p)} disabled={out}>{out?"Sold out":"Add to bag"}</button></div></article>
+}
+
+export function ShopPage({products,add,Header,startNew,loaded=true,theme}){
  const params=new URLSearchParams(location.search);
  const [q,setQ]=useState(params.get("q")||""),[sort,setSort]=useState("available"),[category,setCategory]=useState(startNew?"NEW":params.get("category")||"ALL");
+ const [show,setShow]=useState("all"),[color,setColor]=useState("");
  const categories=useMemo(()=>Array.from(new Set(products.map(p=>String(p.category||"").trim()).filter(Boolean))).sort((a,b)=>a.localeCompare(b)),[products]);
  const inCategory=(p,c)=>c==="ALL"||(c==="NEW"?isNew(p):String(p.category||"").toLowerCase()===c.toLowerCase());
  const shown=useMemo(()=>products.filter(p=>inCategory(p,category)&&`${p.name} ${p.brand} ${p.tone} ${p.category||""}`.toLowerCase().includes(q.toLowerCase()))
@@ -78,6 +94,25 @@ export function ShopPage({products,add,Header,startNew,loaded=true}){
  const choose=c=>{setCategory(c);history.replaceState({},"",c==="ALL"?"/shop":c==="NEW"?"/new":`/shop?category=${encodeURIComponent(c)}`)};
  const chips=[["ALL","All products"],...(products.some(isNew)||category==="NEW"?[["NEW","New arrivals"]]:[]),...categories.map(c=>[c,c])];
  const title=category==="ALL"?"All products":category==="NEW"?"New arrivals":category;
+ if(theme==="noir"){
+  // "Show" and the color swatches narrow what search + category already picked
+  const grid=shown.filter(p=>(show==="all"||(show==="out")===soldOut(p))&&(!color||colorOf(p)===color));
+  const swatches=COLORS.filter(([c])=>products.some(p=>colorOf(p)===c));
+  const reset=()=>{setQ("");setShow("all");setColor("");choose("ALL")};
+  return <div className="catalogPage">{Header}<main className="bqMain">
+   <BqHero eyebrow="Handmade crochet bags" title={category==="ALL"?"The Collection":title} lead="Each bag is crocheted by hand and finished with gold-tone rings."/>
+   <div className="bqShop"><aside className="bqSide" aria-label="Filters">
+    <input className="bqSearch" value={q} onChange={e=>setQ(e.target.value)} placeholder="Search bags" aria-label="Search products"/>
+    <h4>Show</h4>{[["all","All bags",shown.length],["in","Available",shown.filter(p=>!soldOut(p)).length],["out","Sold out",shown.filter(soldOut).length]].map(([k,t,n])=><button key={k} className="bqFilter" aria-pressed={show===k} onClick={()=>setShow(k)}><span>{t}</span><span>{n}</span></button>)}
+    {(chips.length>2||category!=="ALL")&&<><h4>Category</h4>{chips.map(([id,label])=><button key={id} className="bqFilter" aria-pressed={category===id} onClick={()=>choose(id)}><span>{label}</span><span>{products.filter(p=>inCategory(p,id)).length}</span></button>)}</>}
+    {swatches.length>0&&<><h4>Colors</h4><div className="bqSw">{swatches.map(([c,hex])=><button key={c} style={{background:hex}} title={c} aria-label={c} aria-pressed={color===c} onClick={()=>setColor(color===c?"":c)}/>)}</div>{color&&<button className="bqClear" onClick={()=>setColor("")}>{color} · show all colors</button>}</>}
+    <h4>Sort</h4><select className="bqSort" value={sort} onChange={e=>setSort(e.target.value)} aria-label="Sort"><option value="available">Available first</option><option value="newest">Newest</option><option value="name">Name</option><option value="low">Price: low to high</option><option value="high">Price: high to low</option></select>
+   </aside>
+   <section aria-label="Products"><div className="bqGrid">{grid.map(p=><BqCard key={p.id} p={p} add={add}/>)}</div>
+    {!grid.length&&<div className="bqNone">{!loaded&&!products.length?"Loading the collection…":<><b>No bags match these filters.</b><button className="bqBtn ghost" onClick={reset}>See all bags</button></>}</div>}
+   </section></div>
+  </main></div>
+ }
  return <div className="catalogPage">{Header}
   <main className="catalogMain">
    <div className="catalogHero"><small>KARIA COLLECTION</small><h1>{category==="NEW"?"New at KARIA.":"Shop KARIA."}</h1><p>Handmade crochet bags, crocheted one by one.</p></div>
@@ -165,7 +200,17 @@ export function ProductReviews({product,products,reviews,user,onSignIn,onSaved})
   <div className="reviewGrid"><ReviewList reviews={mine} products={products} empty="No reviews yet. Be the first to review this product."/><ReviewForm products={products} productId={product.id} user={user} onSignIn={onSignIn} onSaved={onSaved}/></div></section>
 }
 // Every review in the store, on its own page.
-export function ReviewsPage({Header,products,reviews,user,onSignIn,onSaved}){
+export function ReviewsPage({Header,products,reviews,user,onSignIn,onSaved,theme}){
+ if(theme==="noir"){
+  const n=reviews.length,prod=id=>products.find(p=>p.id===id);
+  return <div className="catalogPage">{Header}<main className="bqMain"><BqHero eyebrow="Reviews" title={n?"Loved by our customers":"Customer reviews"} lead="Real words from people who carry a KARIA bag."/>
+   {n?<div className="bqSum"><div><b>{ratingOf(reviews).toFixed(1)}</b>Average</div><div><b>{n}</b>{n===1?"Review":"Reviews"}</div><div><b>100%</b>Verified buyers</div></div>
+    :<div className="bqSum bqEmpty"><Stars value={0} size={22}/><b>No reviews yet</b><span>Reviews come from customers who bought a KARIA bag.</span></div>}
+   <div className={`bqRv${n?"":" solo"}`}>{reviews.map(r=>{const p=prod(r.product_id);return <article className="bqRcard" key={r.id}><Stars value={r.rating} size={16}/><p className="bqQ">“{r.body}”</p>
+     <div className="bqBy">{p&&<img src={closeUp(p)} alt=""/>}<div><b>{r.author_name||"KARIA customer"}</b>{p&&<a href={`/product/${p.id}`}>{p.name}</a>}</div></div></article>})}
+    <div className="bqRcard bqWrite"><h2>Bought a bag?</h2><p className="bqWriteLead">Tell other customers what you think.</p><ReviewForm products={products} user={user} onSignIn={onSignIn} onSaved={onSaved}/></div></div>
+  </main></div>
+ }
  return <div className="catalogPage">{Header}<main className="catalogMain narrowMain"><div className="catalogHero"><small>FROM OUR CUSTOMERS</small><h1>Reviews.</h1><p>Real words from people who carry a KARIA bag.</p></div>
   <div className="catalogContext"><div><small>ALL PRODUCTS</small><h2>Customer reviews</h2></div><ReviewSummary reviews={reviews}/></div>
   <div className="reviewGrid"><ReviewList reviews={reviews} products={products} showProduct empty="No reviews yet. Be the first to leave one."/><ReviewForm products={products} user={user} onSignIn={onSignIn} onSaved={onSaved}/></div>
@@ -200,10 +245,21 @@ export function OrdersPage({user,Header,onSignIn}){
 
 /* ───────────────────────── CONTACT + ABOUT ───────────────────────── */
 // `info` is the "storefront" setting edited in Admin → Settings; nothing is shown until it is filled in.
-export function ContactPage({Header,info={}}){
+export function ContactPage({Header,info={},theme}){
  const [state,setState]=useState("");
  const wa=String(info.whatsapp||"").replace(/[^0-9]/g,""),ig=String(info.instagram||"").replace(/^@/,"").trim();
  const submit=async e=>{e.preventDefault();const form=e.currentTarget,f=Object.fromEntries(new FormData(form));if(!supabase){setState("error");return}setState("busy");const {error}=await supabase.from("contact_messages").insert({name:String(f.name).trim(),email:String(f.email).trim().toLowerCase(),message:String(f.message).trim()});if(error){setState("error");return}form.reset();setState("ok")};
+ if(theme==="noir"){
+  const tiles=[info.contact_email&&["Email",info.contact_email,`mailto:${info.contact_email}`],["Orders","Track your order","/orders"],["Shipping","Rates & delivery","/shipping"],["Returns","Returns & refunds","/returns"],
+   wa&&["WhatsApp",info.whatsapp,`https://wa.me/${wa}`,1],ig&&["Instagram",`@${ig}`,`https://instagram.com/${ig}`,1]].filter(Boolean);
+  return <div className="catalogPage">{Header}<main className="bqMain"><BqHero eyebrow="Contact" title="We'd love to hear from you" lead="Questions about an order, a bag or anything else — write to us and we will answer as soon as we can."/>
+   <div className="bqCt"><form className="bqBox" onSubmit={submit}><h2>Send a message</h2><label>Name<input name="name" required maxLength={120}/></label><label>Email<input name="email" type="email" required maxLength={200}/></label><label>Message<textarea name="message" rows={6} required maxLength={4000}/></label>
+     {state==="ok"&&<p className="checkoutCouponSuccess">Thank you — your message was sent.</p>}{state==="error"&&<p className="checkoutError">We could not send your message right now. Please try again later.</p>}
+     <button className="bqBtn" disabled={state==="busy"}>{state==="busy"?"Sending…":"Send message"}</button></form>
+    <div className="bqTiles">{tiles.map(([k,t,href,ext])=><a key={k} className="bqTile" href={href} {...(ext?{target:"_blank",rel:"noreferrer"}:{})}><span className="bqEye">{k}</span><b>{k==="Email"&&t.includes("@")?<>{t.slice(0,t.indexOf("@"))}<wbr/>{t.slice(t.indexOf("@"))}</>:t}</b></a>)}
+     <div className="bqTile wide"><span className="bqEye">Business</span><b>Karia Shop LLC</b></div></div>
+   </div></main></div>
+ }
  return <div className="catalogPage">{Header}<main className="catalogMain narrowMain"><div className="catalogHero"><small>WE ARE HERE TO HELP</small><h1>Contact us.</h1><p>Questions about an order, a product or anything else — write to us and we will answer as soon as we can.</p></div>
   <div className="contactGrid">
    <form className="checkoutForm" onSubmit={submit}><h2>Send a message</h2><label>Name<input name="name" required maxLength={120}/></label><label>Email<input name="email" type="email" required maxLength={200}/></label><label>Message<textarea name="message" rows={6} required maxLength={4000}/></label>
@@ -222,10 +278,16 @@ export function ContactPage({Header,info={}}){
 }
 
 const ABOUT_DEFAULT=["KARIA makes handmade crochet bags, stitch by stitch, in small batches.","Each piece is made one at a time, so colors and stitches can vary slightly from bag to bag."+(CUSTOMIZE_ON?" With KARIA Atelier you can design your own: pick a style, choose every color, and we make it just for you.":"")];
-export function AboutPage({Header,info={},products=[]}){
+export function AboutPage({Header,info={},products=[],theme}){
  const text=String(info.about||"").split(/\n+/).map(s=>s.trim()).filter(Boolean);
  // three bags in stock first, for the photo strip
  const pics=[...products].sort((a,b)=>soldOut(a)-soldOut(b)).slice(0,3);
+ if(theme==="noir")return <div className="catalogPage">{Header}<main className="bqMain"><BqHero eyebrow="Our story" title="About KARIA"/>
+  <blockquote className="bqQuote">{(text.length?text:ABOUT_DEFAULT).map((t,i)=><p key={i}>{t}</p>)}</blockquote>
+  {pics.length>0&&<div className="bqStory">{pics.map(p=><figure key={p.id}><a href={`/product/${p.id}`}><img src={closeUp(p)} alt={p.name} loading="lazy"/></a><figcaption>{p.name}</figcaption></figure>)}</div>}
+  <div className="bqSum">{products.length>0&&<div><b>{products.length}</b>Colors</div>}<div><b>100%</b>Handmade</div><div><b>2</b>Founders</div></div>
+  <div className="bqCta"><a className="bqBtn" href="/shop">Shop the collection</a>{CUSTOMIZE_ON&&<a className="bqBtn ghost" href="/customize">Create your bag</a>}<a className="bqBtn ghost" href="/contact">Contact us</a></div>
+ </main></div>;
  return <div className="catalogPage">{Header}<main className="catalogMain aboutMain"><div className="catalogHero"><small>OUR STORY</small><h1>About KARIA.</h1></div>
   <div className="aboutText">{(text.length?text:ABOUT_DEFAULT).map((t,i)=><p key={i}>{t}</p>)}</div>
   {pics.length>0&&<div className="aboutStrip">{pics.map(p=><a key={p.id} href={`/product/${p.id}`}><img src={p.thumb||p.img} alt={p.name} loading="lazy"/><span>{p.name}</span></a>)}</div>}

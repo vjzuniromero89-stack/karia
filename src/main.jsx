@@ -111,7 +111,7 @@ function App(){
  if(admin) return <Suspense fallback={<div className="adminLoading">Loading admin…</div>}><Admin back={()=>setAdmin(false)}/></Suspense>;
  const path=location.pathname,signIn=()=>setAccountOpen(true);
  const Header=<StoreHeader cartCount={cart.length} onCart={()=>setCartOpen(true)} onAccount={signIn}/>;
- const shop={products:shopProducts,add,Header},rev={reviews,user,onSignIn:signIn,onSaved:loadReviews};
+ const shop={products:shopProducts,add,Header,theme},rev={reviews,user,onSignIn:signIn,onSaved:loadReviews};
  let page;
  if(path==="/checkout/success")page=<CheckoutSuccessPage setCart={setCart} Header={Header}/>;
  else if(path==="/checkout")page=<CheckoutPage cart={cart} user={user} Header={Header} onSignIn={signIn}/>;
@@ -119,10 +119,10 @@ function App(){
  else if(notFound)page=<div className="catalogPage">{Header}<main className="catalogMain narrowMain"><div className="catalogHero"><small>404</small><h1>Page not found.</h1><p>The page you are looking for does not exist or has moved.</p><div className="aboutActions"><a className="cta" href="/shop">Go to the shop <ArrowRight/></a><a className="dashLink" href="/">HOME</a><a className="dashLink" href="/contact">CONTACT US</a></div></div></main></div>;
  else if(path==="/shop"||path==="/new"||(path==="/customize"&&!CUSTOMIZE_ON))page=<ShopPage {...shop} loaded={loaded} startNew={path==="/new"}/>;
  else if(path==="/customize")page=<CustomizePage add={add} Header={Header}/>;
- else if(path==="/reviews")page=<ReviewsPage Header={Header} products={shopProducts} {...rev}/>;
+ else if(path==="/reviews")page=<ReviewsPage Header={Header} products={shopProducts} theme={theme} {...rev}/>;
  else if(path==="/orders")page=<OrdersPage user={user} Header={Header} onSignIn={signIn}/>;
- else if(path==="/contact")page=<ContactPage Header={Header} info={storefront}/>;
- else if(path==="/about")page=<AboutPage Header={Header} info={storefront} products={shopProducts}/>;
+ else if(path==="/contact")page=<ContactPage Header={Header} info={storefront} theme={theme}/>;
+ else if(path==="/about")page=<AboutPage Header={Header} info={storefront} products={shopProducts} theme={theme}/>;
  else if(path.startsWith("/product/"))page=<ProductPage {...shop} {...rev} loaded={loaded} id={decodeURIComponent(path.split("/").pop())}/>;
  else page=theme==='noir'?<NoirHome Header={Header} products={shopProducts} add={add} loaded={loaded}/>:<HomePage Header={Header} storeProducts={storeProducts}/>;
  // Bag, account and password panels live here so they work on every page (checkout included).
