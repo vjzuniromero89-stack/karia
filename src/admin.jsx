@@ -461,7 +461,9 @@ function ProductAdminTable({rows,stock={},onEdit,onDelete,onDuplicate,onAddStock
  if(!rows?.length)return <div className="kCard kEmpty">No products yet.</div>;
  const n=r=>stock[r.id]||0,custom=r=>r.sku===CUSTOM_SKU;
  const test={all:()=>true,soldout:r=>!custom(r)&&r.active!==false&&n(r)<=0,low:r=>!custom(r)&&r.active!==false&&n(r)>0&&n(r)<=Number(r.low_stock_threshold??2),hidden:r=>r.active===false};
- const term=q.trim().toLowerCase(),shown=rows.filter(r=>test[f](r)&&(!term||String(r.name||'').toLowerCase().includes(term)||String(r.sku||'').toLowerCase().includes(term)));
+ const term=q.trim().toLowerCase(),shown=rows.filter(r=>test[f](r)&&(!term||String(r.name||'').toLowerCase().includes(term)||String(r.sku||'').toLowerCase().includes(term)))
+  // by SKU in natural order (k01, k02 … k10, k14); products without a SKU go last
+  .sort((a,b)=>(!a.sku)-(!b.sku)||String(a.sku||'').localeCompare(String(b.sku||''),'en',{numeric:true,sensitivity:'base'}));
  const add=async r=>{setBusy(true);const ok=await onAddStock(r,qty);setBusy(false);if(ok)setAdding(null)};
  return <><div className="kChips">{PRODUCT_CHIPS.map(([k,label])=><button type="button" key={k} className="kChip" aria-pressed={f===k} onClick={()=>setF(k)}>{label}<i>{rows.filter(test[k]).length}</i></button>)}<input type="search" className="kSearch" placeholder="Search name or SKU" aria-label="Search products" value={q} onChange={e=>setQ(e.target.value)}/></div>
   {!shown.length?<div className="kCard kEmpty">{term?`No product matches “${q}”.`:'No products here.'}</div>:<div className="kPcards">{shown.map(r=>{const photo=mainPhoto(r.product_media);return <article className="kPcard" key={r.id}>{photo?<img src={photo} alt={r.name||'Product'}/>:<div className="kNoPhoto">No photo</div>}<div className="b">
