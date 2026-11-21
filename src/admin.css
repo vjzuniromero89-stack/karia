@@ -326,3 +326,4 @@
  .admin.kAdmin .kKv{grid-template-columns:110px minmax(0,1fr)}
  .admin.kAdmin .kRetRow .kPill{font-size:12px;padding:2px 8px}
 }.admin .kThree{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}@media(max-width:600px){.admin .kThree{grid-template-columns:1fr}}
+.admin .kStyleBoxes{margin-top:18px;border-top:1px solid #e4dfd7;padding-top:16px}.admin .kStyleBoxes h3{font-size:16px;margin:0 0 4px}.admin .kStyleBoxes input{width:100%;min-width:70px;border:1px solid #e4dfd7;border-radius:8px;padding:7px 9px;font-size:15px}.admin .kStyleBoxes td{padding:6px}.admin .kStyleBoxes .kTableWrap{overflow-x:auto;margin:8px 0 10px}
