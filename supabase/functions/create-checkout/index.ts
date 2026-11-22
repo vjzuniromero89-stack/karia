@@ -7,9 +7,9 @@ const money=(n:number)=>Math.round((Number(n)||0)*100)/100;
 // KARIA V7.49 — only these messages reach the customer; anything else (Postgres, Stripe) is logged and replaced by a generic one
 class UserError extends Error{}
 const PAID_STATUSES=["paid","processing","shipped","delivered"];
-const SITE="https://karia-liart.vercel.app";
-// production, Vercel previews of this project (team edvickar) and the local dev server
-const allowedOrigin=(o:string|null)=>!!o&&(o===SITE||/^https:\/\/karia-[a-z0-9-]+-edvickar\.vercel\.app$/.test(o)||o==="http://localhost:5186"||o==="http://127.0.0.1:5186");
+const SITE="https://kariashop.com";
+// own domain (V7.69), the old Vercel address, Vercel previews of this project (team edvickar) and the local dev server
+const allowedOrigin=(o:string|null)=>!!o&&(o===SITE||o==="https://www.kariashop.com"||o==="https://karia-liart.vercel.app"||/^https:\/\/karia-[a-z0-9-]+-edvickar\.vercel\.app$/.test(o)||o==="http://localhost:5186"||o==="http://127.0.0.1:5186");
 
 Deno.serve(async(req)=>{
  if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
